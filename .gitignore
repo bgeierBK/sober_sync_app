@@ -1,0 +1,11 @@
+# Python files
+venv/
+__pycache__/
+*.pyc
+
+# Node.js files
+frontend/node_modules/
+frontend/dist/
+
+# System files
+.DS_Store
