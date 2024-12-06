@@ -42,3 +42,9 @@ class User(db.Model, SerializerMixin):
             return value
         else:
             raise ValueError('Not a valid email address')
+
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.String, unique=True, nullable=False)
+    name= db.Column(db.String, nullabl=False)
+    chat_room_id = db.Column(db.String, unique=True, nullable=False)
