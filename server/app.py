@@ -1,4 +1,4 @@
-from flask import Flask, request, session
+from flask import Flask, request, session, jsonify
 from flask_bcrypt import Bcrypt
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -47,9 +47,68 @@ def create_user():
     except Exception as e:
         return {'error': str(e)}, 406
 
+@app.get("api/check_session")
+def check_session():
+    if 'user_id' in session:
+        user = User.query.where(User.id == session['user_id']).first()
+        if user:
+            return user.to_dict(), 200
+        else:
+            return{'error': 'user not found'}, 404
+    else:
+        return {'error': 'no active session'}, 204
+
+@app.post('/api/login')
+def login():
+    user = User.query.where(User.username == request.json.get('username')).first()
+    if user and bcrypt.check_password_hash(user._hashed_password, request.json.get('pasword')):
+        session['user_id'] = user.id
+        return user.to_dict(), 201
+    else:
+        return {'error': 'Username or password was invalid'}
+
+@app.delete('/api/logout')
+def logout():
+    session.pop('user_id')
+    return {}, 204
+
+# user routes
+
+@app.get('/api/users')
+def get_users():
+    return [user.to_dict() for user in User.query.all()], 200
+
+@app.get('/api/users/<int:id>')
+def get_one_user(id):
+    user = User.query.get(id)
+    if user:
+        return jsonify(user.to_dict()), 200
+    return {}, 404
+
+@app.patch('/api/users/<int:id>')
+def update_user(id):
+    user = User.query.where(User.id == id).first()
+    if user:
+        for key in request.json.keys():
+            setattr(user,key,request.json[key])
+        db.session.add(user)
+        db.session.commit()
+        return user.to_dict()
+    return {}, 404
+
+@app.delete('/api/users/<int:id>')
+def delete_user(id):
+    user = User.query.where(User.id == id).first()
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+        return {}, 204
+    return {}, 404
+
+
 
 # Main entry point
-    if __name__ == '__main__':
-        app.run(debug=True)
+if __name__ == '__main__':
+    app.run(port=5555, debug=True)
    
 
