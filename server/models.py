@@ -43,8 +43,43 @@ class User(db.Model, SerializerMixin):
         else:
             raise ValueError('Not a valid email address')
 
-class Event(db.Model):
+
+class Event(db.Model, SerializerMixin):
+    __tablename__ = 'events_table'
+
     id = db.Column(db.Integer, primary_key=True)
-    event_id = db.Column(db.String, unique=True, nullable=False)
-    name= db.Column(db.String, nullabl=False)
-    chat_room_id = db.Column(db.String, unique=True, nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    date = db.Column(db.String(50), nullable=False)
+    venue_name = db.Column(db.String(255), nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+
+    @validates('name')
+    def validate_name(self, key, value):
+        if len(value.strip()) >0:
+            return value
+        else:
+            raise ValueError('Event name cannot be empty')
+    
+    @validates('date')
+    def validate_date(self, key, value):
+        if len(value.strip()) >0:
+            return value
+        else:
+            raise ValueError('Event date cannot be empty')
+    
+    @validates('venue_name')
+    def validate_venue_name(self, key, value):
+        if len(value.strip()) >0:
+            return value
+        else:
+            raise ValueError('Venue name cannot be empty')
+    
+    @validates('city')
+    def validate_city(self, key, value):
+        if len(value.strip()) > 0:
+            return value
+        else:
+            raise ValueError('City cannot be empty')
+    
+
+
