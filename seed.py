@@ -4,6 +4,8 @@ import os
 from werkzeug.security import generate_password_hash  # For password hashing
 from app import db, create_app  # Assuming create_app initializes the app
 from server.models import User, Event  # Adjust the import path based on your project structure
+from server.api_utils import refresh_events
+
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'app')))
 
@@ -11,7 +13,6 @@ app = create_app()  # This should be the function that sets up your Flask app
 
 # Function to seed users
 def seed_users():
-    # Example users with dummy passwords
     users = [
         {
             "username": "john_doe",
@@ -22,7 +23,7 @@ def seed_users():
             "gender": "Male",
             "orientation": "Straight",
             "sober_status": "No",
-            "_hashed_password": generate_password_hash("password123")  # Hash the password
+            "_hashed_password": generate_password_hash("password123")
         },
         {
             "username": "jane_smith",
@@ -33,21 +34,28 @@ def seed_users():
             "gender": "Female",
             "orientation": "Lesbian",
             "sober_status": "Yes",
-            "_hashed_password": generate_password_hash("password123")  # Hash the password
+            "_hashed_password": generate_password_hash("password123")
         }
     ]
     
-    # Ensure that the app context is pushed
     with app.app_context():
-        # Add user instances to the session
         for user_data in users:
             user = User(**user_data)
             db.session.add(user)
 
-        # Commit the session to save users
         db.session.commit()
         print("Users seeded successfully!")
 
+def seed_events():
+    """Clear and refresh events."""
+    with app.app_context():
+        refresh_events()
+
 if __name__ == '__main__':
-    # Run the seed_users function to populate the database
-    seed_users()
+    action = sys.argv[1] if len(sys.argv) > 1 else None
+    if action == 'users':
+        seed_users()
+    elif action == 'events':
+        seed_events()
+    else:
+        print("Usage: python seed.py [users|events]")

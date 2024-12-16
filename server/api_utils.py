@@ -30,14 +30,12 @@ def fetch_and_add_events():
     API_URL = "https://edmtrain.com/api/events"
     API_KEY = "50be9660-3951-4835-9804-03f5728a9e5a"
     
-    # Get location IDs for NYC
-    location_ids = get_nyc_location_ids()  # This will return a list of location IDs for NYC
-    
+    location_ids = get_nyc_location_ids()
     if not location_ids:
         print("No location IDs found for NYC.")
         return
 
-    LOCATION_IDS = ",".join(map(str, location_ids))  # Join list of IDs as a comma-separated string
+    LOCATION_IDS = ",".join(map(str, location_ids))
 
     params = {
         "client": API_KEY,
@@ -46,15 +44,10 @@ def fetch_and_add_events():
 
     response = requests.get(API_URL, params=params)
     
-    # Log raw response for debugging
-    print("Raw API response:", response.text)
-
-    # Check if the request was successful
     if response.status_code != 200:
         print(f"Error: Received status code {response.status_code} from API.")
         return
 
-    # Try to parse the response as JSON
     try:
         events_data = response.json()
         if not events_data or 'data' not in events_data:
@@ -65,44 +58,41 @@ def fetch_and_add_events():
         return
 
     # Processing the events data
+    events = []
     for event in events_data['data']:
         try:
-            # Log the event data to inspect its structure
-            print("Processing event:", event)
-
-            # Skip event if it's a string or None
-            if isinstance(event, str) or event is None:
-                print(f"Skipping event because it's a string or None: {event}")
-                continue  # Skip if event is a string or None
-
-            # Check if 'name' is None or missing and set a default
-            event_name = event.get("name") if event.get("name") else "Unnamed Event"
+            # Provide default values if fields are missing or None
+            event_name = event.get("name", "Unnamed Event")  # Default to "Unnamed Event"
+            if event_name is None or not isinstance(event_name, str):
+                event_name = "Unnamed Event"  # Ensure it's a valid string
 
             venue = event.get("venue", {})
-            
-            # Ensure venue is a dictionary, otherwise use fallback
-            if isinstance(venue, dict):
-                venue_name = venue.get("name", "Unknown Location")
-                city = venue.get("location", "Unknown City")
-            elif isinstance(venue, str):  # If venue is a string, treat it as the venue name
-                venue_name = venue
-                city = "Unknown City"
-            else:  # Fallback for unexpected cases
-                venue_name = "Unknown Location"
-                city = "Unknown City"
+            if not isinstance(venue, dict):  # Ensure venue is a dictionary
+                venue = {}
 
-            # Assuming Event model has the fields name, city, etc.
-            new_event = Event(
-                name=event_name,
+            venue_name = venue.get("name", "Unknown Location") or "Unknown Location"
+            city = venue.get("location", "Unknown City") or "Unknown City"
+
+            events.append(Event(
+                name=event_name.strip(),  # Use `.strip()` safely after defaulting
                 date=event.get("date", "Unknown Date"),
-                venue_name=venue_name,
-                city=city
-            )
-            db.session.add(new_event)
-            db.session.commit()
+                venue_name=venue_name.strip() if isinstance(venue_name, str) else "Unknown Location",
+                city=city.strip() if isinstance(city, str) else "Unknown City"
+            ))
 
         except Exception as e:
-            print(f"Error processing event: {event_name}. Error: {str(e)}")
-            continue  # Continue to next event even if one fails
+            print(f"Error processing event: {event.get('name', 'Unnamed Event')}. Error: {str(e)}")
+            continue
 
+    db.session.bulk_save_objects(events)
+    db.session.commit()
     print("Events successfully added.")
+
+
+def refresh_events():
+    """Clear existing events and fetch new ones."""
+    with db.session.begin():
+        db.session.query(Event).delete()
+    print("Existing events cleared.")
+
+    fetch_and_add_events()
