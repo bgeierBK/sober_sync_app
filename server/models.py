@@ -16,6 +16,9 @@ class User(db.Model, SerializerMixin):
     email_address = db.Column(db.String, unique=True, nullable=False)
     bio = db.Column(db.String)
     profile_pic = db.Column(db.String(255))
+    gender = db.Column(db.String)
+    orientation = db.Column(db.String)
+    sober_status = db.Column(db.String)
 
     @hybrid_property
     def hashed_password(self):
