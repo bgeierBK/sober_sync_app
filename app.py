@@ -4,7 +4,7 @@ from flask import Flask, request, session, jsonify
 from flask_migrate import Migrate
 from server import create_app
 from server.api_utils import fetch_and_add_events
-from server.models import User
+from server.models import User, Event
 from server.extensions import db, bcrypt
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -111,6 +111,12 @@ def delete_user(id):
         db.session.commit()
         return {}, 204
     return {'error': 'User not found'}, 404
+
+#event routes
+
+@app.get('/api/events')
+def get_events():
+    return [event.to_dict() for event in Event.query.all()], 200
 
 # Run the app
 if __name__ == '__main__':
