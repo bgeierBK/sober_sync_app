@@ -57,24 +57,30 @@ def fetch_and_add_events():
         print(f"Error: Failed to decode JSON from response: {response.text}")
         return
 
-    # Processing the events data
+    # Clear the events table before refilling
+    with db.session.begin():  # Begin a new transaction
+        db.session.query(Event).delete()  # Delete all records from the Event table
+
+    print("Events table cleared.")
+
+    # Add new events
     events = []
     for event in events_data['data']:
         try:
             # Provide default values if fields are missing or None
-            event_name = event.get("name", "Unnamed Event")  # Default to "Unnamed Event"
+            event_name = event.get("name", "Unnamed Event")
             if event_name is None or not isinstance(event_name, str):
-                event_name = "Unnamed Event"  # Ensure it's a valid string
+                event_name = "Unnamed Event"
 
             venue = event.get("venue", {})
-            if not isinstance(venue, dict):  # Ensure venue is a dictionary
+            if not isinstance(venue, dict):
                 venue = {}
 
             venue_name = venue.get("name", "Unknown Location") or "Unknown Location"
             city = venue.get("location", "Unknown City") or "Unknown City"
 
             events.append(Event(
-                name=event_name.strip(),  # Use `.strip()` safely after defaulting
+                name=event_name.strip(),
                 date=event.get("date", "Unknown Date"),
                 venue_name=venue_name.strip() if isinstance(venue_name, str) else "Unknown Location",
                 city=city.strip() if isinstance(city, str) else "Unknown City"
@@ -84,15 +90,9 @@ def fetch_and_add_events():
             print(f"Error processing event: {event.get('name', 'Unnamed Event')}. Error: {str(e)}")
             continue
 
-    db.session.bulk_save_objects(events)
-    db.session.commit()
+    # Bulk insert new events
+    with db.session.begin():  # Use a transaction for efficiency
+        db.session.bulk_save_objects(events)
+
     print("Events successfully added.")
 
-
-def refresh_events():
-    """Clear existing events and fetch new ones."""
-    with db.session.begin():
-        db.session.query(Event).delete()
-    print("Existing events cleared.")
-
-    fetch_and_add_events()

@@ -1,6 +1,7 @@
 import os
 import sys
 from flask import Flask, request, session, jsonify
+from flask_socketio import SocketIO, join_room, leave_room, send
 from flask_migrate import Migrate
 from server import create_app
 from server.api_utils import fetch_and_add_events
@@ -120,4 +121,4 @@ def get_events():
 
 # Run the app
 if __name__ == '__main__':
-    app.run(port=5555, debug=True)
+    app.run(port=5550, debug=True)
