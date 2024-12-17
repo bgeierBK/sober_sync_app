@@ -5,8 +5,9 @@ from flask_socketio import SocketIO, join_room, leave_room, send
 from flask_migrate import Migrate
 from server import create_app
 from server.api_utils import fetch_and_add_events
-from server.models import User, Event
+from server.models import User, Event, ChatMessage
 from server.extensions import db, bcrypt
+from server import socketio 
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -113,6 +114,19 @@ def delete_user(id):
         return {}, 204
     return {'error': 'User not found'}, 404
 
+# chat message routes
+
+@app.get('/api/events/<int:event_id>/chat_messages')
+def get_event_chat_messages(event_id):
+    try:
+        event= Event.query.get(event_id)
+        if not event:
+            return {'error': 'Event not found'}, 404
+        chat_messages = ChatMessage.query.filter_by(event_id=event_id).all()
+        return [message.todict() for message in chat_messages], 200
+    except Exception as e:
+        return {'Error': str(e)}, 500
+
 #event routes
 
 @app.get('/api/events')
@@ -121,4 +135,4 @@ def get_events():
 
 # Run the app
 if __name__ == '__main__':
-    app.run(port=5550, debug=True)
+    socketio.run(app, port=5550, debug=True)

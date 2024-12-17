@@ -2,6 +2,7 @@ from flask import Flask
 from server.extensions import db, bcrypt, migrate, cors
 from flask_socketio import SocketIO, join_room, leave_room, send
 from config import Config
+from server.models import ChatMessage
 
 socketio = SocketIO(cors_allowed_origins="*")
 
@@ -34,7 +35,7 @@ def create_app():
             return {'error': 'Event ID required'}, 400
         room = f"event_{event_id}"
         leave_room(room)
-        send(f"{username} has left the chat", to=room)
+        send(f"{username} has left the chat", to=room, broadcast=True)
     
     @socketio.on('send_message')
     def handle_message(data):
@@ -42,10 +43,14 @@ def create_app():
         message = data.get('message')
         event_id = data.get('event_id')
 
-        if not event_id or message:
+        if not event_id or not message:
             return {'error': 'Event ID and message are required'}
         
+        new_message = ChatMessage(event_id=event_id,username=username, message=message)
+        db.session.add(new_message)
+        db.session.commit()
+        
         room = f"event_{event_id}"
-        send({'username': username, 'message': message}, to=room)
+        send({'username': username, 'message': message}, to=room, broadcast=True)
 
     return app

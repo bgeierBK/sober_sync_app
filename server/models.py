@@ -3,6 +3,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_serializer import SerializerMixin
 from sqlalchemy.orm import validates
 from server.extensions import db, bcrypt
+from datetime import datetime, timezone
 
 
 
@@ -86,6 +87,13 @@ class Event(db.Model, SerializerMixin):
             return value
         else:
             raise ValueError('City cannot be empty')
+        
+class ChatMessage(db.Model, SerializerMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, nullable=False)
+    username= db.Column(db.String(80), nullable=False)
+    message= db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default =datetime.now(timezone.utc))
     
 
 
