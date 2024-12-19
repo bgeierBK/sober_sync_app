@@ -4,7 +4,7 @@ import os
 from werkzeug.security import generate_password_hash  # For password hashing
 from app import db, create_app  # Assuming create_app initializes the app
 from server.models import User, Event  # Adjust the import path based on your project structure
-from server.api_utils import refresh_events
+
 
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'app')))
@@ -46,16 +46,7 @@ def seed_users():
         db.session.commit()
         print("Users seeded successfully!")
 
-def seed_events():
-    """Clear and refresh events."""
-    with app.app_context():
-        refresh_events()
 
 if __name__ == '__main__':
-    action = sys.argv[1] if len(sys.argv) > 1 else None
-    if action == 'users':
         seed_users()
-    elif action == 'events':
-        seed_events()
-    else:
-        print("Usage: python seed.py [users|events]")
+   
