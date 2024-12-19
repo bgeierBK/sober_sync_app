@@ -39,7 +39,7 @@ def fetch_and_add_events():
 
     params = {
         "client": API_KEY,
-        "location_ids": LOCATION_IDS
+        "locationIds": LOCATION_IDS
     }
 
     response = requests.get(API_URL, params=params)
@@ -58,8 +58,8 @@ def fetch_and_add_events():
         return
 
     # Clear the events table before refilling
-    with db.session.begin():  # Begin a new transaction
-        db.session.query(Event).delete()  # Delete all records from the Event table
+    with db.session.begin():
+        db.session.query(Event).delete()
 
     print("Events table cleared.")
 
@@ -67,20 +67,18 @@ def fetch_and_add_events():
     events = []
     for event in events_data['data']:
         try:
-            # Provide default values if fields are missing or None
-            event_name = event.get("name", "Unnamed Event")
-            if event_name is None or not isinstance(event_name, str):
-                event_name = "Unnamed Event"
-
+            # Ensure the city contains "NY"
             venue = event.get("venue", {})
-            if not isinstance(venue, dict):
-                venue = {}
+            city = venue.get("location", "Unknown City")
+            if not isinstance(city, str) or "NY" not in city:
+                continue  # Skip events not in NYC
 
+            # Process event data with fallback values
+            event_name = event.get("name", "Unnamed Event") or "Unnamed Event"
             venue_name = venue.get("name", "Unknown Location") or "Unknown Location"
-            city = venue.get("location", "Unknown City") or "Unknown City"
 
             events.append(Event(
-                name=event_name.strip(),
+                name=event_name.strip() if isinstance(event_name, str) else "Unnamed Event",
                 date=event.get("date", "Unknown Date"),
                 venue_name=venue_name.strip() if isinstance(venue_name, str) else "Unknown Location",
                 city=city.strip() if isinstance(city, str) else "Unknown City"
@@ -91,8 +89,9 @@ def fetch_and_add_events():
             continue
 
     # Bulk insert new events
-    with db.session.begin():  # Use a transaction for efficiency
+    with db.session.begin():
         db.session.bulk_save_objects(events)
 
     print("Events successfully added.")
+
 

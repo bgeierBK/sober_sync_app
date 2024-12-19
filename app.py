@@ -133,6 +133,32 @@ def get_event_chat_messages(event_id):
 def get_events():
     return [event.to_dict() for event in Event.query.all()], 200
 
+@app.get('/api/events/<int:id>')
+def get_one_event(id):
+    event = Event.query.get(id)
+    if event:
+        return jsonify(event.to_dict()), 200
+    return {'error': 'User not found'}, 404
+
+@app.patch('/api/events/<int:id>')
+def update_event(id):
+    event = Event.query.get(id)
+    if event:
+        for key, value in request.json.items():
+            setattr(event, key, value)
+        db.session.commit()
+        return event.to_dict(), 200
+    return {'error': 'User not found'}, 404
+
+@app.delete('/api/events/<int:id>')
+def delete_event(id):
+    event = Event.query.get(id)
+    if event:
+        db.session.delete(event)
+        db.session.commit()
+        return {}, 204
+    return {'error': 'User not found'}, 404
+
 # Run the app
 if __name__ == '__main__':
     socketio.run(app, port=5550, debug=True)
