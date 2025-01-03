@@ -5,6 +5,7 @@ import LogInPage from "./pages/LogInPage";
 import SignUpPage from "./pages/SignUpPage";
 import UserProfile from "./pages/UserProfile";
 import Home from "./pages/Home";
+import React from "react";
 
 const routes = [
   {

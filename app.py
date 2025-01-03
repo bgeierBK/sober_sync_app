@@ -44,11 +44,13 @@ def import_events():
 def create_user():
     try:
         new_user = User(
-            username=request.json.get('username'),
-            age=request.json.get('age'),
-            email_address=request.json.get('email_address'),
+            username=request.json.get('username'),  # should match frontend key
+            age=int(request.json.get('age')),
+            email_address=request.json.get('email_address'),  # corrected from 'emailAddress'
             bio=request.json.get('bio'),
-            profile_pic=request.json.get('profile_pic')
+            gender=request.json.get('gender'),
+            orientation=request.json.get('orientation'),
+            sober_status=request.json.get('sober_status'),  # corrected from 'soberStatus'
         )
         new_user.hashed_password = request.json.get('password')
         db.session.add(new_user)
@@ -56,7 +58,10 @@ def create_user():
         session['user_id'] = new_user.id
         return new_user.to_dict(), 201
     except Exception as e:
+        print(f"Error: {e}")
         return {'error': str(e)}, 406
+
+
 
 @app.get("/api/check_session")
 def check_session():

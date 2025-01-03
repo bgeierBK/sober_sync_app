@@ -16,24 +16,24 @@ class User(db.Model, SerializerMixin):
     _hashed_password = db.Column(db.String, nullable=False)
     email_address = db.Column(db.String, unique=True, nullable=False)
     bio = db.Column(db.String)
-    profile_pic = db.Column(db.String(255))
     gender = db.Column(db.String)
     orientation = db.Column(db.String)
     sober_status = db.Column(db.String)
 
-    #relationships
+    # relationships
     messages = db.relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
     events = db.relationship('Event', secondary="user_event", back_populates="attendees")
 
-    #validators
+    # password hash management
     @hybrid_property
     def hashed_password(self):
         raise AttributeError('Password hashes may not be viewed')
-    
+
     @hashed_password.setter
     def hashed_password(self, password):
         self._hashed_password = bcrypt.generate_password_hash(password.encode('utf-8'))
 
+    # validators
     @validates('username')
     def validate_username(self, key, value):
         if len(value.strip().replace(' ', '_')) >= 5:

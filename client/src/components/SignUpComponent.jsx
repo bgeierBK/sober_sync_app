@@ -10,16 +10,45 @@ function SignUpComponent() {
   const [gender, setGender] = useState("");
   const [orientation, setOrientation] = useState("");
   const [soberStatus, setSoberStatus] = useState("");
+  const navigate = useNavigate();
+  const { setCurrentUser } = useOutletContext();
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    fetch("http://localhost:5550/api/users", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: userName, // this key needs to match what the backend expects
+        age: age,
+        password: password,
+        email_address: emailAddress, // backend expects `email_address` (snake_case)
+        bio: bio,
+        gender: gender,
+        orientation: orientation,
+        sober_status: soberStatus, // backend expects `sober_status` (snake_case)
+      }),
+    }).then((response) => {
+      if (response.ok) {
+        response.json().then((newUser) => setCurrentUser(newUser));
+        navigate("/");
+      } else {
+        alert("Problem with signup");
+      }
+    });
+  }
 
   return (
-    <form>
+    <form onSubmit={handleSubmit}>
       <h3>Sign Up</h3>
       <div>
         <label>
           User Name:
           <input
             type="text"
-            name="username"
+            name="userName"
             onChange={(e) => setUserName(e.target.value)}
             placeholder="Username"
             value={userName}
@@ -101,8 +130,8 @@ function SignUpComponent() {
           Sexual Orientation:
           <select
             name="orientation"
-            onChange={(e) => setGender(e.target.value)}
-            value={gender}
+            onChange={(e) => setOrientation(e.target.value)}
+            value={orientation}
           >
             <option value="" disabled>
               Select your orientation
@@ -119,7 +148,7 @@ function SignUpComponent() {
         <label>
           Password:
           <input
-            type="text"
+            type="password"
             name="password"
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
@@ -127,6 +156,7 @@ function SignUpComponent() {
           />
         </label>
       </div>
+      <input type="submit" value="Signup" />
     </form>
   );
 }
