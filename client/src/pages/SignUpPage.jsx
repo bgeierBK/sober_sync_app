@@ -1,9 +1,10 @@
 import "../App.css";
+import SignUpComponent from "../components/SignUpComponent";
 
 function SignUpPage() {
   return (
     <>
-      <h2>Welcome to a the signup page</h2>
+      <SignUpComponent />
     </>
   );
 }

@@ -5,7 +5,7 @@ import "../App.css";
 function App() {
   return (
     <>
-      <h2>Main Page</h2>
+      <h2>Sober Sync</h2>
       <Outlet />
     </>
   );
