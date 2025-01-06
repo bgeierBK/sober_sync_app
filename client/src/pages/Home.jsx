@@ -1,11 +1,14 @@
-import "../App.css";
+import { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
+import EventContainer from "../components/EventContainer";
 
-function EventPage() {
+function Home() {
+  const [events, setEvents] = useState([]);
   return (
     <>
-      <h2>Welcome to the Home Page</h2>
+      <EventContainer events={events} setEvents={setEvents} />
     </>
   );
 }
 
-export default EventPage;
+export default Home;
