@@ -85,7 +85,7 @@ function SignUpComponent() {
           <input
             type="number"
             name="age"
-            onChange={(e) => setAge(e.target.value)}
+            onChange={(e) => setAge(parseInt(e.target.value))}
             placeholder="Age"
             value={age}
           />

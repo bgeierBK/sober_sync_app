@@ -1,9 +1,10 @@
 import "../App.css";
+import LogInComponent from "../components/LogInComponent";
 
 function LogInPage() {
   return (
     <>
-      <h2>Welcome to the LogInPage</h2>
+      <LogInComponent />
     </>
   );
 }
