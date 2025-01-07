@@ -51,6 +51,10 @@ def create_app():
         db.session.commit()
         
         room = f"event_{event_id}"
-        send({'username': username, 'message': message}, to=room, broadcast=True)
+        send({
+    'username': username,
+    'message': message,
+    'timestamp': new_message.timestamp.isoformat()
+}, to=room, broadcast=True)
 
     return app
