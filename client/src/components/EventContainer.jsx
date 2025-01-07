@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
+import EventCard from "./EventCard";
 
 // eslint-disable-next-line react/prop-types
 function EventContainer({ events, setEvents }) {
@@ -12,9 +13,22 @@ function EventContainer({ events, setEvents }) {
   }, [setEvents]);
 
   console.log(events);
+
+  const mappedEvents = events.map((event) => {
+    return (
+      <EventCard
+        key={event.id}
+        events={events}
+        setEvents={setEvents}
+        event={event}
+      />
+    );
+  });
+
   return (
     <>
       <h2>This is the event container</h2>
+      {mappedEvents}
     </>
   );
 }
