@@ -8,11 +8,19 @@ from server.api_utils import fetch_and_add_events
 from server.models import User, Event, ChatMessage
 from server.extensions import db, bcrypt
 from server import socketio 
+from datetime import timedelta
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Create and configure the app
 app = create_app()
+
+app.config['SESSION_PERMANENT'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Customize the duration as needed
+
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', '`zrNgl-T#xDu~"=') 
+
+
 
 # Initialize Flask-Migrate
 migrate = Migrate(app, db)
@@ -44,22 +52,26 @@ def import_events():
 def create_user():
     try:
         new_user = User(
-            username=request.json.get('username'),  # should match frontend key
+            username=request.json.get('username'),
             age=int(request.json.get('age')),
-            email_address=request.json.get('email_address'),  # corrected from 'emailAddress'
+            email_address=request.json.get('email_address'),
             bio=request.json.get('bio'),
             gender=request.json.get('gender'),
             orientation=request.json.get('orientation'),
-            sober_status=request.json.get('sober_status'),  # corrected from 'soberStatus'
+            sober_status=request.json.get('sober_status'),
         )
         new_user.hashed_password = request.json.get('password')
         db.session.add(new_user)
         db.session.commit()
+
+        # Set session
         session['user_id'] = new_user.id
+        session.permanent = True  # Explicitly make the session permanent
         return new_user.to_dict(), 201
     except Exception as e:
         print(f"Error: {e}")
         return {'error': str(e)}, 406
+
 
 
 
@@ -163,6 +175,31 @@ def delete_event(id):
         db.session.commit()
         return {}, 204
     return {'error': 'User not found'}, 404
+
+@app.post('/api/events/<int:event_id>/rsvp')
+def rsvp_to_event(event_id):
+    if 'user_id' not in session:
+        return {'error': 'You must be logged in to RSVP'}, 401
+
+    user_id = session['user_id']
+    event = Event.query.get(event_id)
+    user = User.query.get(user_id)
+
+    if not event:
+        return {'error': 'Event not found'}, 404
+    if not user:
+        return {'error': 'User not found'}, 404
+
+    # Check if the user is already attending
+    if event in user.events:
+        return {'message': 'You are already RSVP\'d for this event'}, 400
+
+    # Add the user to the event's attendees and vice versa
+    user.events.append(event)
+    db.session.commit()
+
+    return {'message': 'RSVP successful', 'event': event.to_dict()}, 200
+
 
 # Run the app
 if __name__ == '__main__':

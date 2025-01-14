@@ -14,16 +14,19 @@ function EventContainer({ events, setEvents }) {
 
   console.log(events);
 
-  const mappedEvents = events.map((event) => {
-    return (
-      <EventCard
-        key={event.id}
-        events={events}
-        setEvents={setEvents}
-        event={event}
-      />
-    );
-  });
+  const mappedEvents = events
+    // eslint-disable-next-line react/prop-types
+    .filter((event) => event.name !== "Unnamed Event")
+    .map((event) => {
+      return (
+        <EventCard
+          key={event.id}
+          events={events}
+          setEvents={setEvents}
+          event={event}
+        />
+      );
+    });
 
   return (
     <>
