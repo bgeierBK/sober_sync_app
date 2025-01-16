@@ -1,8 +1,10 @@
 /* eslint-disable react/prop-types */
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function EventCard({ events, setEvents, event }) {
   const [message, setMessage] = useState("");
+  const navigate = useNavigate();
 
   const handleRSVP = async () => {
     try {
@@ -29,6 +31,10 @@ function EventCard({ events, setEvents, event }) {
     }
   };
 
+  const handleGoToChat = () => {
+    navigate(`/events/${event.id}`);
+  };
+
   return (
     <>
       <p>{event.name}</p>
@@ -36,7 +42,7 @@ function EventCard({ events, setEvents, event }) {
       <p>{event.venue_name}</p>
       <div>
         <button onClick={handleRSVP}>RSVP</button>
-        <button>Go to Chat</button>
+        <button onClick={handleGoToChat}>Go to Chat</button>
       </div>
       {message && <p>{message}</p>}
     </>

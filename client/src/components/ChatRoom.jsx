@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import socket from "/Users/ben/Development/code/personal_projects/sober_sync_app/socket.js";
 
+// eslint-disable-next-line react/prop-types
 const ChatRoom = ({ eventId, username }) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
