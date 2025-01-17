@@ -1,13 +1,27 @@
 import { useEffect, useState } from "react";
 import socket from "/Users/ben/Development/code/personal_projects/sober_sync_app/socket.js";
 
-// eslint-disable-next-line react/prop-types
 const ChatRoom = ({ eventId, username }) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
 
   useEffect(() => {
-    // Join the chat room for the specific event
+    // Fetch existing messages
+    const fetchMessages = async () => {
+      try {
+        const response = await fetch(`/api/events/${eventId}/chat_messages`);
+        if (response.ok) {
+          const data = await response.json();
+          setMessages(data);
+        }
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      }
+    };
+
+    fetchMessages();
+
+    // Join the chat room
     socket.emit("join_room", eventId);
 
     // Listen for new messages
@@ -29,7 +43,6 @@ const ChatRoom = ({ eventId, username }) => {
     };
 
     socket.emit("send_message", chatMessage);
-    setMessages((prevMessages) => [...prevMessages, chatMessage]);
     setMessage("");
   };
 

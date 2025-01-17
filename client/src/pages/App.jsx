@@ -8,13 +8,15 @@ function App() {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5550/api/users")
+    fetch("http://localhost:5550/api/users", { credentials: "include" })
       .then((res) => res.json())
       .then((users) => setUsers(users));
   }, []);
 
   useEffect(() => {
-    fetch("/api/check_session").then((response) => {
+    fetch("http://localhost:5550/api/check_session", {
+      credentials: "include",
+    }).then((response) => {
       if (response.status === 200) {
         response.json().then((loggedInUser) => setCurrentUser(loggedInUser));
       }

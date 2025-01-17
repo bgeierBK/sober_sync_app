@@ -12,8 +12,6 @@ function EventContainer({ events, setEvents }) {
       });
   }, [setEvents]);
 
-  console.log(events);
-
   const mappedEvents = events
     // eslint-disable-next-line react/prop-types
     .filter((event) => event.name !== "Unnamed Event")

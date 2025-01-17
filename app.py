@@ -16,7 +16,9 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 app = create_app()
 
 app.config['SESSION_PERMANENT'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Customize the duration as needed
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+app.config['SESSION_COOKIE_SAMESITE'] = "None"  # Required for cross-origin cookies
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True if using HTTPS
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', '`zrNgl-T#xDu~"=') 
 
@@ -46,6 +48,8 @@ def import_events():
         return {"message": "Events imported successfully."}, 200
     except Exception as e:
         return {"error": str(e)}, 500
+    
+    
 
 # User login and authentication routes
 @app.post('/api/users')
@@ -77,6 +81,7 @@ def create_user():
 
 @app.get("/api/check_session")
 def check_session():
+    print(session)  # Log session data
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
         if user:
@@ -85,6 +90,7 @@ def check_session():
             return {'error': 'user not found'}, 404
     else:
         return {'error': 'no active session'}, 204
+
 
 @app.post('/api/login')
 def login():
@@ -133,16 +139,17 @@ def delete_user(id):
 
 # chat message routes
 
-@app.get('/api/events/<int:event_id>/chat_messages')
+@app.get('/api/events/<int:event_id>/chat_messages', endpoint="fetch_event_chat_messages")
 def get_event_chat_messages(event_id):
     try:
-        event= Event.query.get(event_id)
+        event = Event.query.get(event_id)
         if not event:
             return {'error': 'Event not found'}, 404
         chat_messages = ChatMessage.query.filter_by(event_id=event_id).all()
-        return [message.todict() for message in chat_messages], 200
+        return [message.to_dict() for message in chat_messages], 200
     except Exception as e:
-        return {'Error': str(e)}, 500
+        return {'error': str(e)}, 500
+
 
 #event routes
 
