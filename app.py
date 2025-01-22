@@ -7,22 +7,25 @@ from server import create_app
 from server.api_utils import fetch_and_add_events
 from server.models import User, Event, ChatMessage
 from server.extensions import db, bcrypt
-from server import socketio 
+from server import create_app, socketio
 from datetime import timedelta
+from flask_session import Session
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+
 
 # Create and configure the app
 app = create_app()
 
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-app.config['SESSION_COOKIE_SAMESITE'] = "None"  # Required for cross-origin cookies
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True if using HTTPS
+app.config['SESSION_COOKIE_SAMESITE'] = "None"  # For cross-origin cookies
+app.config['SESSION_COOKIE_SECURE'] = False     # Use True in production with HTTPS
+app.config['SESSION_TYPE'] = "filesystem"       # Change to 'redis' for production
+app.config['SESSION_FILE_DIR'] = "/tmp/flask_sessions"  # Local session storage
 
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', '`zrNgl-T#xDu~"=') 
-
-
+Session(app)
 
 # Initialize Flask-Migrate
 migrate = Migrate(app, db)
@@ -81,7 +84,7 @@ def create_user():
 
 @app.get("/api/check_session")
 def check_session():
-    print(session)  # Log session data
+    print("Session contents:", session)  # Debug session contents
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
         if user:
@@ -90,6 +93,7 @@ def check_session():
             return {'error': 'user not found'}, 404
     else:
         return {'error': 'no active session'}, 204
+
 
 
 @app.post('/api/login')

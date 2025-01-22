@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { useState, useEffect } from "react";
+import NavBar from "../components/NavBar";
 
 import "../App.css";
 
@@ -8,14 +9,16 @@ function App() {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5550/api/users", { credentials: "include" })
+    fetch("http://localhost:5550/api/users", {
+      credentials: "include", // Include credentials (cookies) in the request
+    })
       .then((res) => res.json())
       .then((users) => setUsers(users));
   }, []);
 
   useEffect(() => {
     fetch("http://localhost:5550/api/check_session", {
-      credentials: "include",
+      credentials: "include", // Include credentials (cookies) in the request
     }).then((response) => {
       if (response.status === 200) {
         response.json().then((loggedInUser) => setCurrentUser(loggedInUser));
@@ -28,6 +31,7 @@ function App() {
 
   return (
     <>
+      <NavBar currentUser={currentUser} setCurrentUser={setCurrentUser} />
       <h2>Sober Sync</h2>
       <Outlet
         context={{ currentUser: currentUser, setCurrentUser: setCurrentUser }}

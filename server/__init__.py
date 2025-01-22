@@ -1,13 +1,15 @@
-from flask import Flask
+from flask import Flask, request, session
 from server.extensions import db, bcrypt, migrate, cors
 from flask_socketio import SocketIO, join_room, leave_room, send
 from config import Config
 from server.models import ChatMessage
 from datetime import datetime
 
+# Create a SocketIO instance (not yet bound to an app)
 socketio = SocketIO(cors_allowed_origins="*")
 
 def create_app():
+    # Create the Flask app
     app = Flask(__name__)
     app.config.from_object(Config)
 
@@ -18,6 +20,13 @@ def create_app():
     cors.init_app(app, supports_credentials=True)
     socketio.init_app(app)
 
+    # SocketIO events should be defined within this function
+    register_socketio_events(socketio)
+
+    return app
+
+def register_socketio_events(socketio):
+    """Register SocketIO event handlers."""
     @socketio.on("join_room")
     def handle_join(data):
         username = data.get('username')
@@ -79,5 +88,3 @@ def create_app():
         except Exception as e:
             db.session.rollback()
             send({'error': str(e)}, to=request.sid)
-
-    return app
