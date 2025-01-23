@@ -211,6 +211,120 @@ def rsvp_to_event(event_id):
 
     return {'message': 'RSVP successful', 'event': event.to_dict()}, 200
 
+from server.models import FriendRequest  # Import FriendRequest model
+
+# Endpoint to send a friend request
+@app.post('/api/friend-request')
+def send_friend_request():
+    if 'user_id' not in session:
+        return {'error': 'You must be logged in to send a friend request'}, 401
+
+    sender_id = session['user_id']
+    receiver_id = request.json.get('receiver_id')
+
+    if sender_id == receiver_id:
+        return {'error': 'You cannot send a friend request to yourself'}, 400
+
+    receiver = User.query.get(receiver_id)
+    if not receiver:
+        return {'error': 'Receiver not found'}, 404
+
+    # Check if a pending or accepted friend request already exists
+    existing_request = FriendRequest.query.filter_by(sender_id=sender_id, receiver_id=receiver_id).first()
+    if existing_request:
+        return {'error': 'Friend request already sent'}, 400
+
+    # Create a new friend request
+    friend_request = FriendRequest(sender_id=sender_id, receiver_id=receiver_id, status='pending')
+    db.session.add(friend_request)
+    db.session.commit()
+
+    return {'message': 'Friend request sent successfully'}, 201
+
+
+# Endpoint to approve a friend request
+@app.post('/api/friend-request/<int:request_id>/approve')
+def approve_friend_request(request_id):
+    if 'user_id' not in session:
+        return {'error': 'You must be logged in to approve a friend request'}, 401
+
+    user_id = session['user_id']
+    friend_request = FriendRequest.query.get(request_id)
+
+    if not friend_request:
+        return {'error': 'Friend request not found'}, 404
+
+    if friend_request.receiver_id != user_id:
+        return {'error': 'You are not authorized to approve this friend request'}, 403
+
+    if friend_request.status != 'pending':
+        return {'error': 'Friend request is not pending'}, 400
+
+    # Approve the friend request
+    friend_request.status = 'approved'
+
+    # Add the users to the friend association table
+    sender = User.query.get(friend_request.sender_id)
+    receiver = User.query.get(friend_request.receiver_id)
+
+    sender.friends.append(receiver)
+    db.session.commit()
+
+    return {'message': 'Friend request approved successfully'}, 200
+
+
+# Endpoint to reject a friend request
+@app.post('/api/friend-request/<int:request_id>/reject')
+def reject_friend_request(request_id):
+    if 'user_id' not in session:
+        return {'error': 'You must be logged in to reject a friend request'}, 401
+
+    user_id = session['user_id']
+    friend_request = FriendRequest.query.get(request_id)
+
+    if not friend_request:
+        return {'error': 'Friend request not found'}, 404
+
+    if friend_request.receiver_id != user_id:
+        return {'error': 'You are not authorized to reject this friend request'}, 403
+
+    if friend_request.status != 'pending':
+        return {'error': 'Friend request is not pending'}, 400
+
+    # Reject the friend request
+    friend_request.status = 'rejected'
+    db.session.commit()
+
+    return {'message': 'Friend request rejected successfully'}, 200
+
+
+# Endpoint to list all friend requests for the logged-in user
+@app.get('/api/friend-requests')
+def get_friend_requests():
+    if 'user_id' not in session:
+        return {'error': 'You must be logged in to view friend requests'}, 401
+
+    user_id = session['user_id']
+
+    received_requests = FriendRequest.query.filter_by(receiver_id=user_id).all()
+    sent_requests = FriendRequest.query.filter_by(sender_id=user_id).all()
+
+    return {
+        'received_requests': [req.to_dict() for req in received_requests],
+        'sent_requests': [req.to_dict() for req in sent_requests]
+    }, 200
+
+@app.get('/api/users/<int:user_id>/friends')
+def get_user_friends(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return {'error': 'User not found'}, 404
+
+    # Get all friends of the user
+    friends = user.friends
+    return {'friends': [friend.to_dict() for friend in friends]}, 200
+
+
 
 # Run the app
 if __name__ == '__main__':

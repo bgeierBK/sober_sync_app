@@ -1,10 +1,8 @@
-
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_serializer import SerializerMixin
-from sqlalchemy.orm import validates
+from sqlalchemy.orm import validates, relationship
 from server.extensions import db, bcrypt
 from datetime import datetime, timezone
-
 
 
 class User(db.Model, SerializerMixin):
@@ -23,6 +21,25 @@ class User(db.Model, SerializerMixin):
     # relationships
     messages = db.relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
     events = db.relationship('Event', secondary="user_event", back_populates="attendees")
+    sent_requests = db.relationship(
+        'FriendRequest',
+        foreign_keys='FriendRequest.sender_id',
+        back_populates='sender',
+        cascade='all, delete-orphan'
+    )
+    received_requests = db.relationship(
+        'FriendRequest',
+        foreign_keys='FriendRequest.receiver_id',
+        back_populates='receiver',
+        cascade='all, delete-orphan'
+    )
+    friends = db.relationship(
+        'User',
+        secondary='friend_association',
+        primaryjoin='User.id==friend_association.c.user_id',
+        secondaryjoin='User.id==friend_association.c.friend_id',
+        backref='friend_of'
+    )
 
     # password hash management
     @hybrid_property
@@ -56,6 +73,28 @@ class User(db.Model, SerializerMixin):
             raise ValueError('Not a valid email address')
 
 
+class FriendRequest(db.Model, SerializerMixin):
+    __tablename__ = 'friend_requests'
+
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
+    status = db.Column(db.String, default='pending')  # 'pending', 'approved', 'rejected'
+    timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+
+    # relationships
+    sender = db.relationship('User', foreign_keys=[sender_id], back_populates='sent_requests')
+    receiver = db.relationship('User', foreign_keys=[receiver_id], back_populates='received_requests')
+
+
+# Friend association table
+friend_association = db.Table(
+    'friend_association',
+    db.Column('user_id', db.Integer, db.ForeignKey('users_table.id'), primary_key=True),
+    db.Column('friend_id', db.Integer, db.ForeignKey('users_table.id'), primary_key=True)
+)
+
+
 class Event(db.Model, SerializerMixin):
     __tablename__ = 'events_table'
 
@@ -65,61 +104,57 @@ class Event(db.Model, SerializerMixin):
     venue_name = db.Column(db.String(255), nullable=False)
     city = db.Column(db.String(100), nullable=False)
 
-    #relationships
+    # relationships
     chat_messages = db.relationship("ChatMessage", back_populates="event", cascade="all, delete-orphan")
     attendees = db.relationship("User", secondary="user_event", back_populates="events")
 
-    #validators
-
+    # validators
     @validates('name')
     def validate_name(self, key, value):
-        if len(value.strip()) >0:
+        if len(value.strip()) > 0:
             return value
         else:
             raise ValueError('Event name cannot be empty')
-    
+
     @validates('date')
     def validate_date(self, key, value):
-        if len(value.strip()) >0:
+        if len(value.strip()) > 0:
             return value
         else:
             raise ValueError('Event date cannot be empty')
-    
+
     @validates('venue_name')
     def validate_venue_name(self, key, value):
-        if len(value.strip()) >0:
+        if len(value.strip()) > 0:
             return value
         else:
             raise ValueError('Venue name cannot be empty')
-    
+
     @validates('city')
     def validate_city(self, key, value):
         if len(value.strip()) > 0:
             return value
         else:
             raise ValueError('City cannot be empty')
-        
+
+
 class ChatMessage(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     event_id = db.Column(db.Integer, db.ForeignKey('events_table.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
-    username= db.Column(db.String(80), nullable=False)
-    message= db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default =datetime.now(timezone.utc))
+    username = db.Column(db.String(80), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
-    #relationships
-
-    event = db.relationship("Event", back_populates = "chat_messages")
+    # relationships
+    event = db.relationship("Event", back_populates="chat_messages")
     user = db.relationship("User", back_populates='messages')
 
-#association table
 
+# Association table for user-event many-to-many relationship
 user_event = db.Table(
     'user_event',
     db.Column('user_id', db.ForeignKey('users_table.id'), primary_key=True),
     db.Column('event_id', db.Integer, db.ForeignKey('events_table.id'), primary_key=True),
     extend_existing=True  
 )
-    
-
-
