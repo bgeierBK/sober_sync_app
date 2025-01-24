@@ -43,7 +43,7 @@ function NavBar({ currentUser, setCurrentUser }) {
             to="/login"
             className="navlink bg-slate-200 hover:bg-gray-200 text-blue-500 font-semibold py-2 px-4 border border-blue-500 rounded"
           >
-            Login
+            Login``
           </NavLink>
         </div>
       ) : (
