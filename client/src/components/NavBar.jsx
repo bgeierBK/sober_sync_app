@@ -5,7 +5,7 @@ import "../index.css";
 // eslint-disable-next-line react/prop-types
 function NavBar({ currentUser, setCurrentUser }) {
   function handleLogOut() {
-    fetch("/api/logout", {
+    fetch("http://localhost:5550/api/logout", {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
