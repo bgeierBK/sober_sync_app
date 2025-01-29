@@ -10,7 +10,7 @@ function LogInComponent() {
   function handleSubmit(event) {
     event.preventDefault();
 
-    fetch("http://localhost:5550/api/login", {
+    fetch("/api/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

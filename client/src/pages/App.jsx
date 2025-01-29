@@ -6,28 +6,31 @@ import "../App.css";
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [users, setUsers] = useState([]);
 
+  // Fetch all users on component mount
   useEffect(() => {
-    fetch("http://localhost:5550/api/users", {
+    fetch("/api/users", {
       credentials: "include", // Include credentials (cookies) in the request
     })
       .then((res) => res.json())
-      .then((users) => setUsers(users));
+      .then((users) => setUsers(users))
+      .catch((error) => console.error("Failed to fetch users:", error));
   }, []);
 
+  // Check session and set the current user
   useEffect(() => {
-    fetch("http://localhost:5550/api/check_session", {
-      credentials: "include", // Include credentials (cookies) in the request
-    }).then((response) => {
-      if (response.status === 200) {
-        response.json().then((loggedInUser) => setCurrentUser(loggedInUser));
-      }
-    });
+    fetch("/api/check_session", {
+      credentials: "include", // Ensure credentials are included (cookies)
+    })
+      .then((response) => {
+        if (response.status === 200) {
+          response.json().then((loggedInUser) => setCurrentUser(loggedInUser));
+        }
+      })
+      .catch((error) => console.error("Failed to check session:", error));
   }, []);
-
-  console.log(currentUser);
-  console.log(users);
 
   return (
     <>
