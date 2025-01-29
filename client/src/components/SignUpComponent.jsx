@@ -15,7 +15,7 @@ function SignUpComponent() {
 
   function handleSubmit(event) {
     event.preventDefault();
-    fetch("http://localhost:5550/api/users", {
+    fetch("/api/users", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

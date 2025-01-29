@@ -18,7 +18,7 @@ function UserProfile() {
 
   // Fetch session user data and check if logged in
   useEffect(() => {
-    fetch("http://localhost:5550/api/check_session", {
+    fetch("api/check_session", {
       method: "GET",
       credentials: "include",
     })
@@ -34,7 +34,7 @@ function UserProfile() {
 
   // Fetch user data
   useEffect(() => {
-    fetch(`http://localhost:5550/api/users/${id}`)
+    fetch(`/api/users/${id}`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Network response was not ok");
@@ -57,7 +57,7 @@ function UserProfile() {
         setIsFriend(friendStatus);
 
         // Check if a friend request has been sent
-        fetch(`http://localhost:5550/api/friend-requests`)
+        fetch("/api/friend-requests")
           .then((res) => res.json())
           .then((reqData) => {
             const sentReq = reqData.sent_requests.some(
@@ -78,7 +78,7 @@ function UserProfile() {
 
   // Handle add friend request
   const handleAddFriend = () => {
-    fetch(`http://localhost:5550/api/friend-request`, {
+    fetch(`/api/friend-request`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ receiver_id: user.id }),
@@ -90,7 +90,7 @@ function UserProfile() {
 
   // Handle accept friend request
   const handleAcceptFriendRequest = (requestId) => {
-    fetch(`http://localhost:5550/api/friend-request/${requestId}/approve`, {
+    fetch(`/api/friend-request/${requestId}/approve`, {
       method: "POST",
       credentials: "include",
     }).then(() => setIsFriend(true));
@@ -98,7 +98,7 @@ function UserProfile() {
 
   // Handle deny friend request
   const handleDenyFriendRequest = (requestId) => {
-    fetch(`http://localhost:5550/api/friend-request/${requestId}/reject`, {
+    fetch(`/api/friend-request/${requestId}/reject`, {
       method: "POST",
       credentials: "include",
     }).then(() => setReceivedRequest(false));
@@ -106,7 +106,7 @@ function UserProfile() {
 
   // Handle remove friend
   const handleRemoveFriend = () => {
-    fetch(`http://localhost:5550/api/friend-request`, {
+    fetch(`/api/friend-request`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: user.id }),

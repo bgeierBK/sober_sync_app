@@ -5,7 +5,7 @@ from flask_socketio import SocketIO, join_room, leave_room, send
 from flask_migrate import Migrate
 from server import create_app
 from server.api_utils import fetch_and_add_events
-from server.models import User, Event, ChatMessage
+from server.models import User, Event, ChatMessage, FriendRequest
 from server.extensions import db, bcrypt
 from redis import Redis
 from flask_session import Session
@@ -217,6 +217,108 @@ def rsvp_to_event(event_id):
     db.session.commit()
 
     return {'message': 'RSVP successful', 'event': event.to_dict()}, 200
+
+#friend request routes
+
+@app.get("/api/friend-requests")
+def get_friend_requests():
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user_id = session["user_id"]
+    sent_requests = FriendRequest.query.filter_by(sender_id=user_id).all()
+    received_requests = FriendRequest.query.filter_by(receiver_id=user_id).all()
+
+    return jsonify({
+        "sent_requests": [req.to_dict() for req in sent_requests],
+        "received_requests": [req.to_dict() for req in received_requests]
+    }), 200
+
+@app.post("/api/friend-request")
+def send_friend_request():
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    sender_id = session["user_id"]
+    receiver_id = request.json.get("receiver_id")
+
+    if sender_id == receiver_id:
+        return jsonify({"error": "You can't send a request to yourself"}), 400
+
+    # Check if request already exists
+    existing_request = FriendRequest.query.filter_by(sender_id=sender_id, receiver_id=receiver_id).first()
+    if existing_request:
+        return jsonify({"error": "Friend request already sent"}), 400
+
+    new_request = FriendRequest(sender_id=sender_id, receiver_id=receiver_id)
+    db.session.add(new_request)
+    db.session.commit()
+
+    return jsonify({"message": "Friend request sent"}), 201
+
+@app.post("/api/friend-request/<int:request_id>/approve")
+def approve_friend_request(request_id):
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    request_obj = FriendRequest.query.get(request_id)
+    if not request_obj:
+        return jsonify({"error": "Friend request not found"}), 404
+
+    if request_obj.receiver_id != session["user_id"]:
+        return jsonify({"error": "Not authorized to approve this request"}), 403
+
+    # Add users as friends
+    sender = User.query.get(request_obj.sender_id)
+    receiver = User.query.get(request_obj.receiver_id)
+
+    sender.friends.append(receiver)
+    receiver.friends.append(sender)
+
+    # Delete request after approval
+    db.session.delete(request_obj)
+    db.session.commit()
+
+    return jsonify({"message": "Friend request approved"}), 200
+
+@app.post("/api/friend-request/<int:request_id>/reject")
+def reject_friend_request(request_id):
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    request_obj = FriendRequest.query.get(request_id)
+    if not request_obj:
+        return jsonify({"error": "Friend request not found"}), 404
+
+    if request_obj.receiver_id != session["user_id"]:
+        return jsonify({"error": "Not authorized to reject this request"}), 403
+
+    db.session.delete(request_obj)
+    db.session.commit()
+
+    return jsonify({"message": "Friend request rejected"}), 200
+
+@app.delete("/api/friend-request")
+def remove_friend():
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user_id = session["user_id"]
+    friend_id = request.json.get("user_id")
+
+    user = User.query.get(user_id)
+    friend = User.query.get(friend_id)
+
+    if not user or not friend:
+        return jsonify({"error": "User not found"}), 404
+
+    if friend in user.friends:
+        user.friends.remove(friend)
+        friend.friends.remove(user)
+        db.session.commit()
+
+    return jsonify({"message": "Friend removed"}), 200
+
 
 # Run the app
 if __name__ == '__main__':

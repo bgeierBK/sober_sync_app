@@ -8,14 +8,11 @@ function EventCard({ events, setEvents, event }) {
 
   const handleRSVP = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:5550/api/events/${event.id}/rsvp`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include", // Include cookies in the request
-        }
-      );
+      const response = await fetch(`/api/events/${event.id}/rsvp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // Include cookies in the request
+      });
 
       if (response.ok) {
         const data = await response.json();
