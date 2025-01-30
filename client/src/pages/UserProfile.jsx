@@ -18,13 +18,17 @@ function UserProfile() {
   useEffect(() => {
     fetch("/api/check_session", {
       method: "GET",
-      credentials: "include",
+      credentials: "include", // Ensures cookies are sent with the request
     })
       .then((response) => response.json())
       .then((data) => {
         if (!data.error) {
           setSessionUserId(data.id);
         }
+      })
+      .catch((error) => {
+        setError("Session check failed.");
+        setLoading(false);
       });
   }, []);
 
@@ -32,7 +36,7 @@ function UserProfile() {
   useEffect(() => {
     if (!sessionUserId) return;
 
-    fetch(`/api/users/${id}`)
+    fetch(`/api/users/${id}`, { credentials: "include" }) // Ensure session cookie is sent
       .then((response) => {
         if (!response.ok) {
           throw new Error("Network response was not ok");
@@ -43,13 +47,17 @@ function UserProfile() {
         setUser(data);
         setLoading(false);
 
+        // Check if the current user is logged in and whether they are the profile owner
         if (sessionUserId === data.id) {
           setIsLoggedInUser(true);
         }
 
         setIsFriend(data.friends.some((friend) => friend.id === sessionUserId));
 
-        return fetch("/api/friend-requests");
+        // Fetch friend requests data
+        return fetch("/api/friend-requests", {
+          credentials: "include", // Ensure session cookies are sent
+        });
       })
       .then((res) => res.json())
       .then((reqData) => {
@@ -62,7 +70,7 @@ function UserProfile() {
         setReceivedRequest(receivedReq);
       })
       .catch((error) => {
-        setError(error);
+        setError(error.message);
         setLoading(false);
       });
   }, [id, sessionUserId]);
@@ -72,17 +80,18 @@ function UserProfile() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ receiver_id: user.id }),
-      credentials: "include",
+      credentials: "include", // Include session cookies
     })
       .then((res) => res.json())
-      .then(() => setIsRequestSent(true));
+      .then(() => setIsRequestSent(true))
+      .catch((error) => setError(error.message));
   };
 
   const handleAcceptFriendRequest = () => {
     if (!receivedRequest) return;
     fetch(`/api/friend-request/${receivedRequest.id}/approve`, {
       method: "POST",
-      credentials: "include",
+      credentials: "include", // Include session cookies
     }).then(() => {
       setIsFriend(true);
       setReceivedRequest(null);
@@ -93,7 +102,7 @@ function UserProfile() {
     if (!receivedRequest) return;
     fetch(`/api/friend-request/${receivedRequest.id}/reject`, {
       method: "POST",
-      credentials: "include",
+      credentials: "include", // Include session cookies
     }).then(() => setReceivedRequest(null));
   };
 
@@ -102,21 +111,22 @@ function UserProfile() {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: user.id }),
-      credentials: "include",
+      credentials: "include", // Include session cookies
     }).then(() => setIsFriend(false));
   };
 
   if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  if (error) return <div>Error: {error}</div>;
   if (!user) return <div>User not found</div>;
 
   return (
-    <>
+    <div className="user-profile">
       <h3>{user.username}</h3>
       <h4>{user.sober_status}</h4>
       <h4>{user.gender}</h4>
       <h4>{user.orientation}</h4>
 
+      {/* If the logged-in user is not the profile owner, show friend request buttons */}
       {sessionUserId && !isLoggedInUser && !isFriend && !isRequestSent && (
         <button onClick={handleAddFriend}>Add Friend</button>
       )}
@@ -137,7 +147,14 @@ function UserProfile() {
       {sessionUserId && isFriend && (
         <button onClick={handleRemoveFriend}>Remove Friend</button>
       )}
-    </>
+
+      {/* If the logged-in user is viewing their own profile, provide options to edit or manage their profile */}
+      {isLoggedInUser && (
+        <button onClick={() => navigate(`/edit-profile/${user.id}`)}>
+          Edit Profile
+        </button>
+      )}
+    </div>
   );
 }
 

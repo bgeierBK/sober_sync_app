@@ -19,26 +19,27 @@ class User(db.Model, SerializerMixin):
     sober_status = db.Column(db.String)
 
     # relationships
-    messages = db.relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
-    events = db.relationship('Event', secondary="user_event", back_populates="attendees")
+    messages = db.relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan", lazy='dynamic')
+    events = db.relationship('Event', secondary="user_event", back_populates="attendees", lazy='dynamic')
     sent_requests = db.relationship(
         'FriendRequest',
         foreign_keys='FriendRequest.sender_id',
         back_populates='sender',
-        cascade='all, delete-orphan'
+        cascade='all, delete-orphan', lazy='dynamic'
     )
     received_requests = db.relationship(
         'FriendRequest',
         foreign_keys='FriendRequest.receiver_id',
         back_populates='receiver',
-        cascade='all, delete-orphan'
+        cascade='all, delete-orphan', lazy='dynamic'
     )
     friends = db.relationship(
         'User',
         secondary='friend_association',
         primaryjoin='User.id==friend_association.c.user_id',
         secondaryjoin='User.id==friend_association.c.friend_id',
-        backref='friend_of'
+        backref='friend_of',
+        lazy='dynamic'
     )
 
     # password hash management
@@ -83,8 +84,8 @@ class FriendRequest(db.Model, SerializerMixin):
     timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
     # relationships
-    sender = db.relationship('User', foreign_keys=[sender_id], back_populates='sent_requests')
-    receiver = db.relationship('User', foreign_keys=[receiver_id], back_populates='received_requests')
+    sender = db.relationship('User', foreign_keys=[sender_id], back_populates='sent_requests', lazy='joined')
+    receiver = db.relationship('User', foreign_keys=[receiver_id], back_populates='received_requests', lazy='joined')
 
 
 # Friend association table
@@ -105,8 +106,8 @@ class Event(db.Model, SerializerMixin):
     city = db.Column(db.String(100), nullable=False)
 
     # relationships
-    chat_messages = db.relationship("ChatMessage", back_populates="event", cascade="all, delete-orphan")
-    attendees = db.relationship("User", secondary="user_event", back_populates="events")
+    chat_messages = db.relationship("ChatMessage", back_populates="event", cascade="all, delete-orphan", lazy='dynamic')
+    attendees = db.relationship("User", secondary="user_event", back_populates="events", lazy='dynamic')
 
     # validators
     @validates('name')
@@ -147,8 +148,8 @@ class ChatMessage(db.Model, SerializerMixin):
     timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
     # relationships
-    event = db.relationship("Event", back_populates="chat_messages")
-    user = db.relationship("User", back_populates='messages')
+    event = db.relationship("Event", back_populates="chat_messages", lazy='joined')
+    user = db.relationship("User", back_populates='messages', lazy='joined')
 
 
 # Association table for user-event many-to-many relationship
