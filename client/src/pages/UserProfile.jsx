@@ -7,33 +7,31 @@ function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
-  const [friends, setFriends] = useState([]);
-  const [friendRequestStatus, setFriendRequestStatus] = useState(null); // Track friend request status
+  const [sessionUserId, setSessionUserId] = useState(null);
   const [isLoggedInUser, setIsLoggedInUser] = useState(false);
   const [isFriend, setIsFriend] = useState(false);
   const [isRequestSent, setIsRequestSent] = useState(false);
-  const [receivedRequest, setReceivedRequest] = useState(false);
-  const [sessionUserId, setSessionUserId] = useState(null);
+  const [receivedRequest, setReceivedRequest] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch session user data and check if logged in
+  // Fetch session user data first
   useEffect(() => {
-    fetch("api/check_session", {
+    fetch("/api/check_session", {
       method: "GET",
       credentials: "include",
     })
       .then((response) => response.json())
       .then((data) => {
-        if (data.error) {
-          setSessionUserId(null); // No user logged in
-        } else {
+        if (!data.error) {
           setSessionUserId(data.id);
         }
       });
   }, []);
 
-  // Fetch user data
+  // Fetch user data only after sessionUserId is set
   useEffect(() => {
+    if (!sessionUserId) return;
+
     fetch(`/api/users/${id}`)
       .then((response) => {
         if (!response.ok) {
@@ -45,30 +43,23 @@ function UserProfile() {
         setUser(data);
         setLoading(false);
 
-        // Check if this is the logged-in user's profile
         if (sessionUserId === data.id) {
           setIsLoggedInUser(true);
         }
 
-        // Check if user is a friend
-        const friendStatus = data.friends.some(
-          (friend) => friend.id === sessionUserId
-        );
-        setIsFriend(friendStatus);
+        setIsFriend(data.friends.some((friend) => friend.id === sessionUserId));
 
-        // Check if a friend request has been sent
-        fetch("/api/friend-requests")
-          .then((res) => res.json())
-          .then((reqData) => {
-            const sentReq = reqData.sent_requests.some(
-              (req) => req.receiver_id === data.id
-            );
-            const receivedReq = reqData.received_requests.some(
-              (req) => req.sender_id === data.id
-            );
-            setIsRequestSent(sentReq);
-            setReceivedRequest(receivedReq);
-          });
+        return fetch("/api/friend-requests");
+      })
+      .then((res) => res.json())
+      .then((reqData) => {
+        setIsRequestSent(
+          reqData.sent_requests.some((req) => req.receiver_id === id)
+        );
+        const receivedReq = reqData.received_requests.find(
+          (req) => req.sender_id === id
+        );
+        setReceivedRequest(receivedReq);
       })
       .catch((error) => {
         setError(error);
@@ -76,7 +67,6 @@ function UserProfile() {
       });
   }, [id, sessionUserId]);
 
-  // Handle add friend request
   const handleAddFriend = () => {
     fetch(`/api/friend-request`, {
       method: "POST",
@@ -88,23 +78,25 @@ function UserProfile() {
       .then(() => setIsRequestSent(true));
   };
 
-  // Handle accept friend request
-  const handleAcceptFriendRequest = (requestId) => {
-    fetch(`/api/friend-request/${requestId}/approve`, {
+  const handleAcceptFriendRequest = () => {
+    if (!receivedRequest) return;
+    fetch(`/api/friend-request/${receivedRequest.id}/approve`, {
       method: "POST",
       credentials: "include",
-    }).then(() => setIsFriend(true));
+    }).then(() => {
+      setIsFriend(true);
+      setReceivedRequest(null);
+    });
   };
 
-  // Handle deny friend request
-  const handleDenyFriendRequest = (requestId) => {
-    fetch(`/api/friend-request/${requestId}/reject`, {
+  const handleDenyFriendRequest = () => {
+    if (!receivedRequest) return;
+    fetch(`/api/friend-request/${receivedRequest.id}/reject`, {
       method: "POST",
       credentials: "include",
-    }).then(() => setReceivedRequest(false));
+    }).then(() => setReceivedRequest(null));
   };
 
-  // Handle remove friend
   const handleRemoveFriend = () => {
     fetch(`/api/friend-request`, {
       method: "DELETE",
@@ -114,17 +106,9 @@ function UserProfile() {
     }).then(() => setIsFriend(false));
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    return <div>Error: {error.message}</div>;
-  }
-
-  if (!user) {
-    return <div>User not found</div>;
-  }
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  if (!user) return <div>User not found</div>;
 
   return (
     <>
@@ -143,12 +127,10 @@ function UserProfile() {
 
       {sessionUserId && !isLoggedInUser && receivedRequest && (
         <>
-          <button onClick={() => handleAcceptFriendRequest(user.id)}>
+          <button onClick={handleAcceptFriendRequest}>
             Accept Friend Request
           </button>
-          <button onClick={() => handleDenyFriendRequest(user.id)}>
-            Deny Friend Request
-          </button>
+          <button onClick={handleDenyFriendRequest}>Deny Friend Request</button>
         </>
       )}
 
