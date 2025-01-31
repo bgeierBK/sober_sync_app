@@ -117,7 +117,8 @@ def logout():
 # User management routes
 @app.get('/api/users')
 def get_users():
-    return [user.to_dict() for user in User.query.all()], 200
+    users = [user.to_dict() for user in User.query.all()]
+    return jsonify(users), 200
 
 @app.get('/api/users/<int:id>')
 def get_one_user(id):

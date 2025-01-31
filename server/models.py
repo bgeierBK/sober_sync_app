@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 class User(db.Model, SerializerMixin):
     __tablename__ = 'users_table'
 
+    serialize_rules = ('-messages', '-events', '-sent_requests', '-received_requests', '-friends')
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String, unique=True, nullable=False)
     age = db.Column(db.Integer, nullable=False)
@@ -18,7 +20,7 @@ class User(db.Model, SerializerMixin):
     orientation = db.Column(db.String)
     sober_status = db.Column(db.String)
 
-    # relationships
+    # Relationships
     messages = db.relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan", lazy='dynamic')
     events = db.relationship('Event', secondary="user_event", back_populates="attendees", lazy='dynamic')
     sent_requests = db.relationship(
@@ -33,16 +35,17 @@ class User(db.Model, SerializerMixin):
         back_populates='receiver',
         cascade='all, delete-orphan', lazy='dynamic'
     )
+    
     friends = db.relationship(
         'User',
         secondary='friend_association',
         primaryjoin='User.id==friend_association.c.user_id',
         secondaryjoin='User.id==friend_association.c.friend_id',
-        backref='friend_of',
-        lazy='dynamic'
+        back_populates="friends",  # Changed from backref='friend_of'
+        lazy='joined'  # Changed from 'dynamic' to 'joined'
     )
 
-    # password hash management
+    # Password hash management
     @hybrid_property
     def hashed_password(self):
         raise AttributeError('Password hashes may not be viewed')
@@ -51,7 +54,7 @@ class User(db.Model, SerializerMixin):
     def hashed_password(self, password):
         self._hashed_password = bcrypt.generate_password_hash(password.encode('utf-8'))
 
-    # validators
+    # Validators
     @validates('username')
     def validate_username(self, key, value):
         if len(value.strip().replace(' ', '_')) >= 5:
@@ -72,6 +75,7 @@ class User(db.Model, SerializerMixin):
             return value
         else:
             raise ValueError('Not a valid email address')
+
 
 
 class FriendRequest(db.Model, SerializerMixin):

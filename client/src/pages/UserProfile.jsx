@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 
 function UserProfile() {
   const { id } = useParams();
+  const userId = Number(id); // Ensure id is a number
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
@@ -18,7 +19,7 @@ function UserProfile() {
   useEffect(() => {
     fetch("/api/check_session", {
       method: "GET",
-      credentials: "include", // Ensures cookies are sent with the request
+      credentials: "include",
     })
       .then((response) => response.json())
       .then((data) => {
@@ -36,7 +37,7 @@ function UserProfile() {
   useEffect(() => {
     if (!sessionUserId) return;
 
-    fetch(`/api/users/${id}`, { credentials: "include" }) // Ensure session cookie is sent
+    fetch(`/api/users/${userId}`, { credentials: "include" })
       .then((response) => {
         if (!response.ok) {
           throw new Error("Network response was not ok");
@@ -47,25 +48,34 @@ function UserProfile() {
         setUser(data);
         setLoading(false);
 
-        // Check if the current user is logged in and whether they are the profile owner
         if (sessionUserId === data.id) {
           setIsLoggedInUser(true);
         }
 
-        setIsFriend(data.friends.some((friend) => friend.id === sessionUserId));
+        // Ensure data.friends is defined and is an array
+        setIsFriend(
+          Array.isArray(data.friends) &&
+            data.friends.some((friend) => friend.id === sessionUserId)
+        );
 
-        // Fetch friend requests data
         return fetch("/api/friend-requests", {
-          credentials: "include", // Ensure session cookies are sent
+          credentials: "include",
         });
       })
       .then((res) => res.json())
       .then((reqData) => {
+        console.log("Sent Requests:", reqData.sent_requests);
+        console.log("Received Requests:", reqData.received_requests);
+        console.log("Checking for request to:", userId);
+
+        // Ensure reqData.sent_requests is defined and is an array
         setIsRequestSent(
-          reqData.sent_requests.some((req) => req.receiver_id === id)
+          Array.isArray(reqData.sent_requests) &&
+            reqData.sent_requests.some((req) => req.receiver_id === userId)
         );
+
         const receivedReq = reqData.received_requests.find(
-          (req) => req.sender_id === id
+          (req) => req.sender_id === userId
         );
         setReceivedRequest(receivedReq);
       })
@@ -73,14 +83,14 @@ function UserProfile() {
         setError(error.message);
         setLoading(false);
       });
-  }, [id, sessionUserId]);
+  }, [userId, sessionUserId]);
 
   const handleAddFriend = () => {
     fetch(`/api/friend-request`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ receiver_id: user.id }),
-      credentials: "include", // Include session cookies
+      credentials: "include",
     })
       .then((res) => res.json())
       .then(() => setIsRequestSent(true))
@@ -91,7 +101,7 @@ function UserProfile() {
     if (!receivedRequest) return;
     fetch(`/api/friend-request/${receivedRequest.id}/approve`, {
       method: "POST",
-      credentials: "include", // Include session cookies
+      credentials: "include",
     }).then(() => {
       setIsFriend(true);
       setReceivedRequest(null);
@@ -102,7 +112,7 @@ function UserProfile() {
     if (!receivedRequest) return;
     fetch(`/api/friend-request/${receivedRequest.id}/reject`, {
       method: "POST",
-      credentials: "include", // Include session cookies
+      credentials: "include",
     }).then(() => setReceivedRequest(null));
   };
 
@@ -111,7 +121,7 @@ function UserProfile() {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: user.id }),
-      credentials: "include", // Include session cookies
+      credentials: "include",
     }).then(() => setIsFriend(false));
   };
 
@@ -126,7 +136,6 @@ function UserProfile() {
       <h4>{user.gender}</h4>
       <h4>{user.orientation}</h4>
 
-      {/* If the logged-in user is not the profile owner, show friend request buttons */}
       {sessionUserId && !isLoggedInUser && !isFriend && !isRequestSent && (
         <button onClick={handleAddFriend}>Add Friend</button>
       )}
@@ -148,7 +157,6 @@ function UserProfile() {
         <button onClick={handleRemoveFriend}>Remove Friend</button>
       )}
 
-      {/* If the logged-in user is viewing their own profile, provide options to edit or manage their profile */}
       {isLoggedInUser && (
         <button onClick={() => navigate(`/edit-profile/${user.id}`)}>
           Edit Profile
