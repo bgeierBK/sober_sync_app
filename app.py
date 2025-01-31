@@ -157,11 +157,14 @@ def get_event_chat_messages(eventId):
 
         # Fetch chat messages for the event
         chat_messages = ChatMessage.query.filter_by(eventId=eventId).all()
+        if not chat_messages:
+            return jsonify({'error': 'No chat messages found for this event'}), 404
 
         # Return messages as a list of dictionaries
         return jsonify([message.to_dict() for message in chat_messages]), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error fetching chat messages for event {eventId}: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 # Event routes
@@ -319,6 +322,23 @@ def remove_friend():
         db.session.commit()
 
     return jsonify({"message": "Friend removed"}), 200
+
+@app.get('/api/events/<int:event_id>/rsvped-users')
+def get_rsvped_users(eventId):
+    try:
+        # Find the event by ID
+        event = Event.query.get(eventId)
+        if not event:
+            return jsonify({'error': 'Event not found'}), 404
+
+        # Fetch all users who have RSVP'd to the event
+        rsvped_users = event.users  # Assuming a many-to-many relationship between Event and User
+
+        # Return users as a list of dictionaries
+        return jsonify({'users': [user.to_dict() for user in rsvped_users]}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # Run the app

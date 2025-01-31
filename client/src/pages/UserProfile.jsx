@@ -52,7 +52,6 @@ function UserProfile() {
           setIsLoggedInUser(true);
         }
 
-        // Ensure data.friends is defined and is an array
         setIsFriend(
           Array.isArray(data.friends) &&
             data.friends.some((friend) => friend.id === sessionUserId)
@@ -64,11 +63,6 @@ function UserProfile() {
       })
       .then((res) => res.json())
       .then((reqData) => {
-        console.log("Sent Requests:", reqData.sent_requests);
-        console.log("Received Requests:", reqData.received_requests);
-        console.log("Checking for request to:", userId);
-
-        // Ensure reqData.sent_requests is defined and is an array
         setIsRequestSent(
           Array.isArray(reqData.sent_requests) &&
             reqData.sent_requests.some((req) => req.receiver_id === userId)
@@ -116,11 +110,11 @@ function UserProfile() {
     }).then(() => setReceivedRequest(null));
   };
 
-  const handleRemoveFriend = () => {
+  const handleRemoveFriend = (friendId) => {
     fetch(`/api/friend-request`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: user.id }),
+      body: JSON.stringify({ user_id: friendId }),
       credentials: "include",
     }).then(() => setIsFriend(false));
   };
@@ -158,9 +152,32 @@ function UserProfile() {
       )}
 
       {isLoggedInUser && (
-        <button onClick={() => navigate(`/edit-profile/${user.id}`)}>
-          Edit Profile
-        </button>
+        <>
+          <button onClick={() => navigate(`/edit-profile/${user.id}`)}>
+            Edit Profile
+          </button>
+
+          {/* List Friends */}
+          <div className="friends-list">
+            <h4>Friends</h4>
+            {user.friends && user.friends.length > 0 ? (
+              <ul>
+                {user.friends.map((friend) => (
+                  <li key={friend.id}>
+                    <span>{friend.username}</span>
+                    {sessionUserId === user.id && (
+                      <button onClick={() => handleRemoveFriend(friend.id)}>
+                        Remove Friend
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No friends yet</p>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
