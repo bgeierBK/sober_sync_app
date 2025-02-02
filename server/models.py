@@ -1,8 +1,16 @@
+from enum import Enum, auto
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_serializer import SerializerMixin
 from sqlalchemy.orm import validates, relationship
 from server.extensions import db, bcrypt
 from datetime import datetime, timezone
+
+
+# Enum for FriendRequest status
+class FriendRequestStatus(Enum):
+    PENDING = auto()
+    APPROVED = auto()
+    REJECTED = auto()
 
 
 class User(db.Model, SerializerMixin):
@@ -36,14 +44,16 @@ class User(db.Model, SerializerMixin):
         cascade='all, delete-orphan', lazy='dynamic'
     )
     
+    # Friends relationship (many-to-many)
     friends = db.relationship(
-        'User',
-        secondary='friend_association',
-        primaryjoin='User.id==friend_association.c.user_id',
-        secondaryjoin='User.id==friend_association.c.friend_id',
-        back_populates="friends",  # Changed from backref='friend_of'
-        lazy='joined'  # Changed from 'dynamic' to 'joined'
-    )
+    'User',
+    secondary='friend_association',
+    primaryjoin='User.id==friend_association.c.user_id',
+    secondaryjoin='User.id==friend_association.c.friend_id',
+    backref='related_friends',  # Use a different name for backref
+    lazy='joined'
+)
+    
 
     # Password hash management
     @hybrid_property
@@ -77,14 +87,14 @@ class User(db.Model, SerializerMixin):
             raise ValueError('Not a valid email address')
 
 
-
+# FriendRequest Model
 class FriendRequest(db.Model, SerializerMixin):
     __tablename__ = 'friend_requests'
 
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
-    status = db.Column(db.String, default='pending')  # 'pending', 'approved', 'rejected'
+    status = db.Column(db.Enum(FriendRequestStatus), default=FriendRequestStatus.PENDING)  # Enum status
     timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
     # relationships
@@ -92,7 +102,7 @@ class FriendRequest(db.Model, SerializerMixin):
     receiver = db.relationship('User', foreign_keys=[receiver_id], back_populates='received_requests', lazy='joined')
 
 
-# Friend association table
+# Friend Association Table
 friend_association = db.Table(
     'friend_association',
     db.Column('user_id', db.Integer, db.ForeignKey('users_table.id'), primary_key=True),
@@ -100,6 +110,7 @@ friend_association = db.Table(
 )
 
 
+# Event Model
 class Event(db.Model, SerializerMixin):
     __tablename__ = 'events_table'
 
@@ -143,6 +154,7 @@ class Event(db.Model, SerializerMixin):
             raise ValueError('City cannot be empty')
 
 
+# ChatMessage Model
 class ChatMessage(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     event_id = db.Column(db.Integer, db.ForeignKey('events_table.id'), nullable=False)
@@ -156,10 +168,10 @@ class ChatMessage(db.Model, SerializerMixin):
     user = db.relationship("User", back_populates='messages', lazy='joined')
 
 
-# Association table for user-event many-to-many relationship
+# Association Table for User-Event Many-to-Many Relationship
 user_event = db.Table(
     'user_event',
     db.Column('user_id', db.ForeignKey('users_table.id'), primary_key=True),
     db.Column('event_id', db.Integer, db.ForeignKey('events_table.id'), primary_key=True),
-    extend_existing=True  
+    extend_existing=True  # Ensure no issues if the table already exists
 )
