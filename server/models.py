@@ -1,17 +1,8 @@
-from enum import Enum, auto
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_serializer import SerializerMixin
 from sqlalchemy.orm import validates, relationship
 from server.extensions import db, bcrypt
 from datetime import datetime, timezone
-
-
-# Enum for FriendRequest status
-class FriendRequestStatus(Enum):
-    PENDING = auto()
-    APPROVED = auto()
-    REJECTED = auto()
-
 
 class User(db.Model, SerializerMixin):
     __tablename__ = 'users_table'
@@ -67,6 +58,29 @@ class User(db.Model, SerializerMixin):
     @property
     def friend_list(self):
         return [{'id': friend.id, 'username': friend.username} for friend in self.friends]
+    
+
+    @property
+    def friend_requests_list(self):
+        result = []
+        for req in self.received_requests:
+            # Try to get an uppercase status string.
+            try:
+                # If req.status is an enum, use its name.
+                status_str = req.status.name
+            except AttributeError:
+                # Otherwise, assume it's a string.
+                status_str = str(req.status).upper()
+            # Only include pending friend requests.
+            if status_str == "PENDING":
+                result.append({
+                    'id': req.id,
+                    'sender_id': req.sender.id,
+                    'sender_username': req.sender.username,
+                    'status': status_str
+                })
+        return result
+
 
     # (Password hash management and validators remain unchanged)
     @hybrid_property
@@ -100,30 +114,37 @@ class User(db.Model, SerializerMixin):
             raise ValueError('Not a valid email address')
 
 
-
 class FriendRequest(db.Model, SerializerMixin):
     __tablename__ = 'friend_requests'
 
-    # Exclude sender and receiver objects to prevent recursion.
     serialize_rules = ('-sender', '-receiver')
 
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
-    status = db.Column(db.Enum(FriendRequestStatus), default=FriendRequestStatus.PENDING)
+    
+    # Change to string instead of Enum
+    status = db.Column(db.String, default='PENDING')
+
     timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
     sender = db.relationship('User', foreign_keys=[sender_id], back_populates='sent_requests', lazy='joined')
     receiver = db.relationship('User', foreign_keys=[receiver_id], back_populates='received_requests', lazy='joined')
 
+    @validates('status')
+    def validate_status(self, key, value):
+        # Normalize and validate the status string
+        normalized_value = value.strip().upper()
+        if normalized_value not in ['PENDING', 'APPROVED', 'REJECTED']:
+            raise ValueError(f"Invalid status: {value}")
+        return normalized_value
 
-# Friend Association Table
+
 friend_association = db.Table(
     'friend_association',
     db.Column('user_id', db.Integer, db.ForeignKey('users_table.id'), primary_key=True),
     db.Column('friend_id', db.Integer, db.ForeignKey('users_table.id'), primary_key=True)
 )
-
 
 class Event(db.Model, SerializerMixin):
     __tablename__ = 'events_table'

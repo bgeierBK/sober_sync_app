@@ -126,9 +126,9 @@ def get_user(id):
     if not user:
         return {"error": "User not found"}, 404
 
-    user_dict = user.to_dict()  # This uses SerializerMixin, which excludes 'friends'
-    # Manually add the simplified friend list
+    user_dict = user.to_dict()  # Using SerializerMixin
     user_dict["friend_list"] = user.friend_list
+    user_dict["friend_requests_list"] = user.friend_requests_list
     return user_dict, 200
 
 @app.patch('/api/users/<int:id>')

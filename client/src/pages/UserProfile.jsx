@@ -8,9 +8,8 @@ function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
-  // ... other state variables ...
+  const navigate = useNavigate();
 
-  // Fetch session user data and user profile data as before...
   useEffect(() => {
     fetch(`/api/users/${userId}`, { credentials: "include" })
       .then((response) => {
@@ -22,7 +21,6 @@ function UserProfile() {
       .then((data) => {
         setUser(data);
         setLoading(false);
-        // ... other state updates ...
       })
       .catch((error) => {
         setError(error.message);
@@ -52,6 +50,25 @@ function UserProfile() {
           </ul>
         ) : (
           <p>No friends yet</p>
+        )}
+      </div>
+
+      {/* List Friend Requests */}
+      <div className="friend-requests-list">
+        <h4>Friend Requests</h4>
+        {user.friend_requests_list && user.friend_requests_list.length > 0 ? (
+          <ul>
+            {user.friend_requests_list.map((req) => (
+              <li key={req.id}>
+                <Link to={`/users/${req.sender_id}`}>
+                  {req.sender_username}
+                </Link>{" "}
+                sent you a friend request.
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No pending friend requests</p>
         )}
       </div>
     </div>
