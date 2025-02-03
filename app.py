@@ -121,11 +121,15 @@ def get_users():
     return jsonify(users), 200
 
 @app.get('/api/users/<int:id>')
-def get_one_user(id):
+def get_user(id):
     user = User.query.get(id)
-    if user:
-        return jsonify(user.to_dict()), 200
-    return {'error': 'User not found'}, 404
+    if not user:
+        return {"error": "User not found"}, 404
+
+    user_dict = user.to_dict()  # This uses SerializerMixin, which excludes 'friends'
+    # Manually add the simplified friend list
+    user_dict["friend_list"] = user.friend_list
+    return user_dict, 200
 
 @app.patch('/api/users/<int:id>')
 def update_user(id):

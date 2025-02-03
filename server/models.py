@@ -16,13 +16,12 @@ class FriendRequestStatus(Enum):
 class User(db.Model, SerializerMixin):
     __tablename__ = 'users_table'
 
-    # Exclude relationships that could cause recursion.
     serialize_rules = (
         '-messages',          # Exclude all ChatMessage objects
-        '-events',            # Exclude events (to avoid serializing Event.attendees and then back)
+        '-events',            # Exclude events
         '-sent_requests',     # Exclude friend requests where this user is sender
         '-received_requests', # Exclude friend requests where this user is receiver
-        '-friends',           # Exclude friends list
+        '-friends',           # Exclude the full friends relationship to avoid recursion
         '-related_friends'    # Exclude the backref for friends
     )
 
@@ -64,7 +63,12 @@ class User(db.Model, SerializerMixin):
         lazy='select'
     )
 
-    # Password hash management
+    # Add a custom property to return a simplified friend list
+    @property
+    def friend_list(self):
+        return [{'id': friend.id, 'username': friend.username} for friend in self.friends]
+
+    # (Password hash management and validators remain unchanged)
     @hybrid_property
     def hashed_password(self):
         raise AttributeError('Password hashes may not be viewed')
@@ -73,7 +77,6 @@ class User(db.Model, SerializerMixin):
     def hashed_password(self, password):
         self._hashed_password = bcrypt.generate_password_hash(password.encode('utf-8'))
 
-    # Validators
     @validates('username')
     def validate_username(self, key, value):
         cleaned = value.strip().replace(' ', '_')
@@ -95,6 +98,7 @@ class User(db.Model, SerializerMixin):
             return value
         else:
             raise ValueError('Not a valid email address')
+
 
 
 class FriendRequest(db.Model, SerializerMixin):
