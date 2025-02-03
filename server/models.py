@@ -16,7 +16,15 @@ class FriendRequestStatus(Enum):
 class User(db.Model, SerializerMixin):
     __tablename__ = 'users_table'
 
-    serialize_rules = ('-messages', '-events', '-sent_requests', '-received_requests', '-friends')
+    # Exclude relationships that could cause recursion.
+    serialize_rules = (
+        '-messages',          # Exclude all ChatMessage objects
+        '-events',            # Exclude events (to avoid serializing Event.attendees and then back)
+        '-sent_requests',     # Exclude friend requests where this user is sender
+        '-received_requests', # Exclude friend requests where this user is receiver
+        '-friends',           # Exclude friends list
+        '-related_friends'    # Exclude the backref for friends
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String, unique=True, nullable=False)
@@ -29,31 +37,32 @@ class User(db.Model, SerializerMixin):
     sober_status = db.Column(db.String)
 
     # Relationships
-    messages = db.relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan", lazy='dynamic')
-    events = db.relationship('Event', secondary="user_event", back_populates="attendees", lazy='dynamic')
+    messages = db.relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan", lazy='select')
+    events = db.relationship('Event', secondary="user_event", back_populates="attendees", lazy='select')
+    
     sent_requests = db.relationship(
         'FriendRequest',
         foreign_keys='FriendRequest.sender_id',
         back_populates='sender',
-        cascade='all, delete-orphan', lazy='dynamic'
+        cascade='all, delete-orphan',
+        lazy='select'
     )
     received_requests = db.relationship(
         'FriendRequest',
         foreign_keys='FriendRequest.receiver_id',
         back_populates='receiver',
-        cascade='all, delete-orphan', lazy='dynamic'
+        cascade='all, delete-orphan',
+        lazy='select'
     )
     
-    # Friends relationship (many-to-many)
     friends = db.relationship(
-    'User',
-    secondary='friend_association',
-    primaryjoin='User.id==friend_association.c.user_id',
-    secondaryjoin='User.id==friend_association.c.friend_id',
-    backref='related_friends',  # Use a different name for backref
-    lazy='joined'
-)
-    
+        'User',
+        secondary='friend_association',
+        primaryjoin='User.id==friend_association.c.user_id',
+        secondaryjoin='User.id==friend_association.c.friend_id',
+        backref='related_friends',
+        lazy='select'
+    )
 
     # Password hash management
     @hybrid_property
@@ -67,8 +76,9 @@ class User(db.Model, SerializerMixin):
     # Validators
     @validates('username')
     def validate_username(self, key, value):
-        if len(value.strip().replace(' ', '_')) >= 5:
-            return value.strip().replace(' ', '_')
+        cleaned = value.strip().replace(' ', '_')
+        if len(cleaned) >= 5:
+            return cleaned
         else:
             raise ValueError('Username must be at least five characters')
 
@@ -87,17 +97,18 @@ class User(db.Model, SerializerMixin):
             raise ValueError('Not a valid email address')
 
 
-# FriendRequest Model
 class FriendRequest(db.Model, SerializerMixin):
     __tablename__ = 'friend_requests'
+
+    # Exclude sender and receiver objects to prevent recursion.
+    serialize_rules = ('-sender', '-receiver')
 
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
-    status = db.Column(db.Enum(FriendRequestStatus), default=FriendRequestStatus.PENDING)  # Enum status
+    status = db.Column(db.Enum(FriendRequestStatus), default=FriendRequestStatus.PENDING)
     timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
-    # relationships
     sender = db.relationship('User', foreign_keys=[sender_id], back_populates='sent_requests', lazy='joined')
     receiver = db.relationship('User', foreign_keys=[receiver_id], back_populates='received_requests', lazy='joined')
 
@@ -110,9 +121,14 @@ friend_association = db.Table(
 )
 
 
-# Event Model
 class Event(db.Model, SerializerMixin):
     __tablename__ = 'events_table'
+
+    # Exclude attendees and chat messages to avoid circular recursion.
+    serialize_rules = (
+        '-attendees',      # Don't include full user objects in attendees.
+        '-chat_messages'   # Exclude chat messages.
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
@@ -120,11 +136,9 @@ class Event(db.Model, SerializerMixin):
     venue_name = db.Column(db.String(255), nullable=False)
     city = db.Column(db.String(100), nullable=False)
 
-    # relationships
-    chat_messages = db.relationship("ChatMessage", back_populates="event", cascade="all, delete-orphan", lazy='dynamic')
-    attendees = db.relationship("User", secondary="user_event", back_populates="events", lazy='dynamic')
+    chat_messages = db.relationship("ChatMessage", back_populates="event", cascade="all, delete-orphan", lazy='select')
+    attendees = db.relationship("User", secondary="user_event", back_populates="events", lazy='select')
 
-    # validators
     @validates('name')
     def validate_name(self, key, value):
         if len(value.strip()) > 0:
@@ -154,8 +168,15 @@ class Event(db.Model, SerializerMixin):
             raise ValueError('City cannot be empty')
 
 
-# ChatMessage Model
 class ChatMessage(db.Model, SerializerMixin):
+    __tablename__ = 'chat_message'  # fixed table name as per your update
+
+    # Exclude the backreferences to avoid recursion.
+    serialize_rules = (
+        '-event',  # Do not include the full event object
+        '-user'    # Do not include the full user object
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     event_id = db.Column(db.Integer, db.ForeignKey('events_table.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
@@ -163,7 +184,6 @@ class ChatMessage(db.Model, SerializerMixin):
     message = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
-    # relationships
     event = db.relationship("Event", back_populates="chat_messages", lazy='joined')
     user = db.relationship("User", back_populates='messages', lazy='joined')
 
@@ -171,7 +191,7 @@ class ChatMessage(db.Model, SerializerMixin):
 # Association Table for User-Event Many-to-Many Relationship
 user_event = db.Table(
     'user_event',
-    db.Column('user_id', db.ForeignKey('users_table.id'), primary_key=True),
+    db.Column('user_id', db.Integer, db.ForeignKey('users_table.id'), primary_key=True),
     db.Column('event_id', db.Integer, db.ForeignKey('events_table.id'), primary_key=True),
-    extend_existing=True  # Ensure no issues if the table already exists
+    extend_existing=True
 )
