@@ -8,8 +8,24 @@ function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
+  const [loggedInUser, setLoggedInUser] = useState(null);
   const navigate = useNavigate();
 
+  // Fetch the logged-in user's info
+  useEffect(() => {
+    fetch("/api/me", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) {
+          console.error("Not logged in:", data.error);
+        } else {
+          setLoggedInUser(data); // Set the logged-in user
+        }
+      })
+      .catch((err) => console.error("Error fetching logged-in user:", err));
+  }, []);
+
+  // Fetch the user profile info
   useEffect(() => {
     fetch(`/api/users/${userId}`, { credentials: "include" })
       .then((response) => {
@@ -53,24 +69,26 @@ function UserProfile() {
         )}
       </div>
 
-      {/* List Friend Requests */}
-      <div className="friend-requests-list">
-        <h4>Friend Requests</h4>
-        {user.friend_requests_list && user.friend_requests_list.length > 0 ? (
-          <ul>
-            {user.friend_requests_list.map((req) => (
-              <li key={req.id}>
-                <Link to={`/users/${req.sender_id}`}>
-                  {req.sender_username}
-                </Link>{" "}
-                sent you a friend request.
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No pending friend requests</p>
-        )}
-      </div>
+      {/* Show Friend Requests only if viewing own profile */}
+      {loggedInUser && loggedInUser.id === user.id && (
+        <div className="friend-requests-list">
+          <h4>Friend Requests</h4>
+          {user.friend_requests_list && user.friend_requests_list.length > 0 ? (
+            <ul>
+              {user.friend_requests_list.map((req) => (
+                <li key={req.id}>
+                  <Link to={`/users/${req.sender_id}`}>
+                    {req.sender_username}
+                  </Link>{" "}
+                  sent you a friend request.
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No pending friend requests</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

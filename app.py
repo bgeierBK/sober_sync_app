@@ -100,19 +100,41 @@ def check_session():
         return {'error': 'no active session'}, 204
 
 
-@app.post('/api/login')
+@app.route("/api/login", methods=["POST"])
 def login():
-    user = User.query.filter_by(username=request.json.get('username')).first()
-    if user and bcrypt.check_password_hash(user._hashed_password, request.json.get('password')):
-        session['user_id'] = user.id
-        return user.to_dict(), 201
-    else:
-        return {'error': 'Username or password was invalid'}, 401
+    data = request.json
+    user = User.query.filter_by(email_address=data.get("email")).first()
+
+    if user and bcrypt.check_password_hash(user._hashed_password, data.get("password")):
+        session["user_id"] = user.id  # Store user in session
+        return jsonify({"message": "Login successful", "user_id": user.id})
+
+    return jsonify({"error": "Invalid credentials"}), 401
 
 @app.delete('/api/logout')
 def logout():
     session.pop('user_id', None)
     return {}, 204
+
+@app.route("/api/me", methods=["GET"])
+def get_current_user():
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in"}), 401
+    
+    user = User.query.get(session["user_id"])
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email_address,
+        "friend_list": [{"id": f.id, "username": f.username} for f in user.friends],
+        "friend_requests_list": [
+            {"id": req.id, "sender_id": req.sender_id, "sender_username": req.sender.username}
+            for req in user.received_requests if req.status == "pending"
+        ]
+    })
 
 # User management routes
 @app.get('/api/users')

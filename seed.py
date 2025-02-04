@@ -1,8 +1,11 @@
 import random
 import requests
+from flask_bcrypt import Bcrypt
 from server.models import db, User, Event, FriendRequest
 from server.api_utils import fetch_and_add_events
 from app import app  # Import your Flask app here
+
+bcrypt = Bcrypt(app)  # Initialize bcrypt with Flask app
 
 def create_users():
     names = [
@@ -11,12 +14,12 @@ def create_users():
         "Umathurman", "Reginald", "Willy", "Xander", "Yaral", "Zanestopher"
     ]
     
-    # Create user instances
+    # Create user instances with hashed passwords
     users = [
         User(
             username=names[i], 
             email_address=f"user{i+1}@example.com", 
-            _hashed_password="password", 
+            _hashed_password=bcrypt.generate_password_hash("password").decode('utf-8'), 
             age=25  # Default age set to 25
         )
         for i in range(len(names))
@@ -57,7 +60,6 @@ def add_users_to_events(users, events):
         print("No events available to assign users.")
         return
 
-    assignments = []
     for user in users:
         num_events = random.randint(1, min(3, len(events)))  # 1-3 events per user
         selected_events = random.sample(events, num_events)
