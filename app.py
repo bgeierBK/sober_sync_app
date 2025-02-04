@@ -349,22 +349,39 @@ def remove_friend():
 
     return jsonify({"message": "Friend removed"}), 200
 
+from flask import request, session
+
 @app.get('/api/events/<int:event_id>/rsvped-users')
-def get_rsvped_users(eventId):
+def get_rsvped_users(event_id):
     try:
-        # Find the event by ID
-        event = Event.query.get(eventId)
+        event = Event.query.get(event_id)
         if not event:
             return jsonify({'error': 'Event not found'}), 404
 
-        # Fetch all users who have RSVP'd to the event
-        rsvped_users = event.users  # Assuming a many-to-many relationship between Event and User
+        rsvped_users = event.attendees  # Get all RSVP’d users
 
-        # Return users as a list of dictionaries
-        return jsonify({'users': [user.to_dict() for user in rsvped_users]}), 200
+        # If no user is logged in, return all RSVP’d users under one list
+        if 'user_id' not in session:
+            return jsonify({
+                'all_users': [user.to_dict() for user in rsvped_users]
+            }), 200
+
+        # If user is logged in, separate friends from other users
+        current_user = User.query.get(session['user_id'])
+        friends = current_user.friends  # Assuming a many-to-many friendship relationship
+
+        rsvped_friends = [user.to_dict() for user in rsvped_users if user in friends]
+        other_rsvped_users = [user.to_dict() for user in rsvped_users if user not in friends]
+
+        return jsonify({
+            'friends': rsvped_friends,
+            'others': other_rsvped_users
+        }), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
 
 
 # Run the app
