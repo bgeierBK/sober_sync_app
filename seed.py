@@ -38,28 +38,35 @@ def create_users():
 def create_friendships(users):
     friendships = []
 
+    # Clear existing friend associations and friend requests to avoid duplicates
+    db.session.query(friend_association).delete()
+    db.session.query(FriendRequest).delete()
+    db.session.commit()
+
     for user in users:
         potential_friends = [u for u in users if u.id != user.id]  # Avoid self-friendship
         
         # Ensure the user gets at least 5 friends
         friends_to_add = random.sample(potential_friends, 5)  # Select 5 friends randomly
         for friend in friends_to_add:
-            # Check if the friendship already exists in friend_association
+            # Check if they are already friends (check both directions)
             existing_friendship = db.session.query(friend_association).filter(
                 (friend_association.c.user_id == user.id) & (friend_association.c.friend_id == friend.id) | 
                 (friend_association.c.user_id == friend.id) & (friend_association.c.friend_id == user.id)
             ).first()
 
+            # If they are already friends, skip creating a friend request
             if not existing_friendship:
+                # Create a new friend request with a "pending" status
                 friendships.append(
                     FriendRequest(
                         sender_id=user.id,
                         receiver_id=friend.id,
-                        status="pending"  # Change to "pending" if "accepted" isn't valid
+                        status="pending"  # Friend request status is "pending"
                     )
                 )
 
-                # Manually add the friendship to the friend_association table
+                # Add the friend association to the table to mark them as friends
                 db.session.execute(
                     friend_association.insert().values(user_id=user.id, friend_id=friend.id)
                 )
@@ -67,12 +74,16 @@ def create_friendships(users):
                     friend_association.insert().values(user_id=friend.id, friend_id=user.id)
                 )
 
-    # Add all friend requests to the session
+    # Add all friendship requests to the session and commit the changes
     if friendships:
         db.session.add_all(friendships)
         db.session.commit()
 
     print(f"{len(friendships)} friendships successfully added.")
+
+
+
+
 
 
 

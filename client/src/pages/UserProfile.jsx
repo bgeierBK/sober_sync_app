@@ -54,6 +54,18 @@ function UserProfile() {
             (req) => req.sender_id === userId
           );
           setIncomingFriendRequest(incomingRequest);
+
+          // Filter out requests from users who are already friends
+          const validFriendRequests = data.friend_requests_list.filter(
+            (request) =>
+              !data.friend_list.some(
+                (friend) => friend.id === request.sender_id
+              )
+          );
+          setUser((prevUser) => ({
+            ...prevUser,
+            friend_requests_list: validFriendRequests,
+          }));
         }
       })
       .catch((error) => {
@@ -85,7 +97,6 @@ function UserProfile() {
 
   // Approve friend request
   const handleAcceptFriendRequest = async (requestId) => {
-    // Optimistically update UI
     const acceptedRequest = user.friend_requests_list.find(
       (req) => req.id === requestId
     );
