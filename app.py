@@ -11,6 +11,8 @@ from redis import Redis
 from flask_session import Session
 from datetime import timedelta
 from flask_cors import CORS
+from flask import jsonify
+
 
 # Enable CORS
  # This will allow your frontend to send and receive cookies
@@ -381,28 +383,41 @@ def get_rsvped_users(event_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-from flask import jsonify
-from server.models import ChatMessage
 
-@app.route("/api/events/<int:eventId>/chat_messages", methods=["GET"])
-def get_chat_messages(eventId):
+
+@app.route("/api/events/<int:id>/chat_messages", methods=["GET"])
+def get_chat_messages(id):
     try:
-        messages = ChatMessage.query.filter_by(eventId=eventId).all()
+        # Query chat messages based on event_id
+        messages = ChatMessage.query.filter_by(event_id=id).all()
+
         if not messages:
-            print(f"No messages found for event ID {eventId}")
-        
+            print(f"No messages found for event ID {id}")
+            return jsonify([]), 200  # Return empty array if no messages found
+
+        # Prepare the response in the desired format
         result = [
             {
+                "id": msg.id,
                 "username": msg.username,
                 "message": msg.message,
-                "timestamp": msg.timestamp.isoformat(),
+                "timestamp": msg.timestamp.isoformat(),  # Ensure timestamp is in ISO format
             }
             for msg in messages
         ]
+
         return jsonify(result), 200
     except Exception as e:
-        print(f"Error fetching chat messages: {str(e)}")
+        print(f"Error fetching chat messages for event ID {id}: {str(e)}")
         return jsonify({"error": "Error fetching chat messages"}), 500
+
+
+
+
+
+
+
+
 
 
 

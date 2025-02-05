@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import ChatRoom from "../components/ChatRoom";
 
 function EventPage() {
-  const { eventId } = useParams(); // Grabbing eventId from the URL
+  const { id } = useParams();
   const [loggedIn, setLoggedIn] = useState(false);
   const [friends, setFriends] = useState([]);
   const [otherUsers, setOtherUsers] = useState([]);
@@ -12,7 +12,7 @@ function EventPage() {
   useEffect(() => {
     const fetchRsvpedUsers = async () => {
       try {
-        const response = await fetch(`/api/events/${eventId}/rsvped-users`, {
+        const response = await fetch(`/api/events/${id}/rsvped-users`, {
           credentials: "include",
         });
 
@@ -36,18 +36,16 @@ function EventPage() {
       }
     };
 
-    if (eventId) {
+    if (id) {
       fetchRsvpedUsers();
     }
-  }, [eventId]);
+  }, [id]);
 
   return (
     <div>
       <h2>Welcome to the Event Page</h2>
-      {/* Chat Room */}
-      {loggedIn && <ChatRoom eventId={eventId} />}{" "}
-      {/* Pass eventId to ChatRoom */}
-      {/* RSVPed Users Section */}
+      <ChatRoom event_id={id} />
+
       <div>
         {loggedIn ? (
           <>

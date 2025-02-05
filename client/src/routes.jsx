@@ -21,7 +21,7 @@ const routes = [
         errorElement: <Error />,
       },
       {
-        path: "/events/:eventId",
+        path: "/events/:id",
         element: <EventPage />,
         errorElement: <Error />,
       },
