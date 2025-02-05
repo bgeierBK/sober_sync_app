@@ -7,23 +7,20 @@ const ChatRoom = ({ eventId, username }) => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    console.log("Event ID:", eventId); // Debugging log
-
     if (!eventId) {
       setError("Event ID is missing");
       return;
     }
 
-    // Fetch existing messages
+    // Fetch existing messages when eventId is available
     const fetchMessages = async () => {
       try {
         const response = await fetch(`/api/events/${eventId}/chat_messages`);
-
         if (!response.ok) {
           throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
 
-        const data = await response.json(); // Parse JSON response
+        const data = await response.json();
         setMessages(data);
       } catch (err) {
         console.error("Error fetching messages:", err);
@@ -33,29 +30,24 @@ const ChatRoom = ({ eventId, username }) => {
 
     fetchMessages();
 
-    // Join the chat room with WebSocket
+    // Join the chat room
     socket.emit("join_room", { username, event_id: eventId });
 
+    // Listen for new messages
     socket.on("receive_message", (newMessage) => {
       setMessages((prevMessages) => [...prevMessages, newMessage]);
     });
 
     return () => {
       socket.emit("leave_room", { username, event_id: eventId });
+      socket.off("receive_message"); // Cleanup event listener
     };
   }, [eventId, username]);
 
   const sendMessage = () => {
     if (message.trim() === "") return;
-
-    const chatMessage = {
-      eventId,
-      username,
-      message,
-    };
-
-    socket.emit("send_message", chatMessage);
-    setMessage(""); // Clear the input field
+    socket.emit("send_message", { event_id: eventId, username, message });
+    setMessage(""); // Clear input field
   };
 
   return (

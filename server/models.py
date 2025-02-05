@@ -4,16 +4,23 @@ from sqlalchemy.orm import validates, relationship
 from server.extensions import db, bcrypt
 from datetime import datetime, timezone
 
+# Association table for users attending events
+user_event = db.Table(
+    'user_event',
+    db.Column('user_id', db.Integer, db.ForeignKey('users_table.id'), primary_key=True),
+    db.Column('event_id', db.Integer, db.ForeignKey('events_table.id'), primary_key=True)
+)
+
 class User(db.Model, SerializerMixin):
     __tablename__ = 'users_table'
 
     serialize_rules = (
-        '-messages',          # Exclude all ChatMessage objects
-        '-events',            # Exclude events
-        '-sent_requests',     # Exclude friend requests where this user is sender
-        '-received_requests', # Exclude friend requests where this user is receiver
-        '-friends',           # Exclude the full friends relationship to avoid recursion
-        '-related_friends'    # Exclude the backref for friends
+        '-messages',
+        '-events',
+        '-sent_requests',
+        '-received_requests',
+        '-friends',
+        '-related_friends'
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -28,8 +35,8 @@ class User(db.Model, SerializerMixin):
 
     # Relationships
     messages = db.relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan", lazy='select')
-    events = db.relationship('Event', secondary="user_event", back_populates="attendees", lazy='select')
-    
+    events = db.relationship('Event', secondary=user_event, back_populates="attendees", lazy='select')
+
     sent_requests = db.relationship(
         'FriendRequest',
         foreign_keys='FriendRequest.sender_id',
@@ -54,24 +61,18 @@ class User(db.Model, SerializerMixin):
         lazy='select'
     )
 
-    # Add a custom property to return a simplified friend list
     @property
     def friend_list(self):
         return [{'id': friend.id, 'username': friend.username} for friend in self.friends]
-    
 
     @property
     def friend_requests_list(self):
         result = []
         for req in self.received_requests:
-            # Try to get an uppercase status string.
             try:
-                # If req.status is an enum, use its name.
                 status_str = req.status.name
             except AttributeError:
-                # Otherwise, assume it's a string.
                 status_str = str(req.status).upper()
-            # Only include pending friend requests.
             if status_str == "PENDING":
                 result.append({
                     'id': req.id,
@@ -81,8 +82,6 @@ class User(db.Model, SerializerMixin):
                 })
         return result
 
-
-    # (Password hash management and validators remain unchanged)
     @hybrid_property
     def hashed_password(self):
         raise AttributeError('Password hashes may not be viewed')
@@ -122,8 +121,6 @@ class FriendRequest(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
-    
-    # Change to string instead of Enum
     status = db.Column(db.String, default='PENDING')
 
     timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
@@ -133,7 +130,6 @@ class FriendRequest(db.Model, SerializerMixin):
 
     @validates('status')
     def validate_status(self, key, value):
-        # Normalize and validate the status string
         normalized_value = value.strip().upper()
         if normalized_value not in ['PENDING', 'APPROVED', 'REJECTED']:
             raise ValueError(f"Invalid status: {value}")
@@ -146,13 +142,13 @@ friend_association = db.Table(
     db.Column('friend_id', db.Integer, db.ForeignKey('users_table.id'), primary_key=True)
 )
 
+
 class Event(db.Model, SerializerMixin):
     __tablename__ = 'events_table'
 
-    # Exclude attendees and chat messages to avoid circular recursion.
     serialize_rules = (
-        '-attendees',      # Don't include full user objects in attendees.
-        '-chat_messages'   # Exclude chat messages.
+        '-attendees',
+        '-chat_messages'
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -161,62 +157,68 @@ class Event(db.Model, SerializerMixin):
     venue_name = db.Column(db.String(255), nullable=False)
     city = db.Column(db.String(100), nullable=False)
 
-    chat_messages = db.relationship("ChatMessage", back_populates="event", cascade="all, delete-orphan", lazy='select')
-    attendees = db.relationship("User", secondary="user_event", back_populates="events", lazy='select')
+    chat_messages = db.relationship(
+        "ChatMessage", 
+        back_populates="event", 
+        cascade="all, delete-orphan", 
+        lazy='select'
+    )
+
+    attendees = db.relationship(
+        "User", 
+        secondary=user_event, 
+        back_populates="events", 
+        lazy='select'
+    )
 
     @validates('name')
     def validate_name(self, key, value):
-        if len(value.strip()) > 0:
-            return value
-        else:
+        if not value.strip():
             raise ValueError('Event name cannot be empty')
+        return value
 
     @validates('date')
     def validate_date(self, key, value):
-        if len(value.strip()) > 0:
-            return value
-        else:
+        if not value.strip():
             raise ValueError('Event date cannot be empty')
+        return value
 
     @validates('venue_name')
     def validate_venue_name(self, key, value):
-        if len(value.strip()) > 0:
-            return value
-        else:
+        if not value.strip():
             raise ValueError('Venue name cannot be empty')
+        return value
 
     @validates('city')
     def validate_city(self, key, value):
-        if len(value.strip()) > 0:
-            return value
-        else:
+        if not value.strip():
             raise ValueError('City cannot be empty')
+        return value
 
 
 class ChatMessage(db.Model, SerializerMixin):
-    __tablename__ = 'chat_message'  # fixed table name as per your update
+    __tablename__ = 'chat_message'
 
-    # Exclude the backreferences to avoid recursion.
     serialize_rules = (
-        '-event',  # Do not include the full event object
-        '-user'    # Do not include the full user object
+        '-event',
+        '-user'
     )
 
     id = db.Column(db.Integer, primary_key=True)
-    event_id = db.Column(db.Integer, db.ForeignKey('events_table.id'), nullable=False)
+    eventId = db.Column(db.Integer, db.ForeignKey('events_table.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
     username = db.Column(db.String(80), nullable=False)
     message = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    event = db.relationship("Event", back_populates="chat_messages", lazy='joined')
-    user = db.relationship("User", back_populates='messages', lazy='joined')
+    event = db.relationship(
+        "Event", 
+        back_populates="chat_messages", 
+        lazy='joined'
+    )
 
-
-# Association Table for User-Event Many-to-Many Relationship
-user_event = db.Table(
-    'user_event',
-    db.Column('user_id', db.Integer, db.ForeignKey('users_table.id'), primary_key=True),
-    db.Column('event_id', db.Integer, db.ForeignKey('events_table.id'), primary_key=True),
-    extend_existing=True
-)
+    user = db.relationship(
+        "User", 
+        back_populates="messages", 
+        lazy='joined'
+    )

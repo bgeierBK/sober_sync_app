@@ -1,7 +1,6 @@
 import random
-import requests
 from flask_bcrypt import Bcrypt
-from server.models import db, User, Event, FriendRequest
+from server.models import db, User, Event, FriendRequest, user_event
 from server.api_utils import fetch_and_add_events
 from app import app  # Import your Flask app here
 
@@ -36,39 +35,53 @@ def create_users():
     # Return the list of users
     return users
 
-def create_friend_requests(users):
-    friend_requests = []
+def create_friendships(users):
+    friendships = []
 
     for user in users:
-        potential_friends = [u for u in users if u.id != user.id]  # Avoid self-friend request
-        if potential_friends:
-            friend_requests.append(
-                FriendRequest(
-                    sender_id=user.id,
-                    receiver_id=random.choice(potential_friends).id,
-                    status="pending",
+        potential_friends = [u for u in users if u.id != user.id]  # Avoid self-friendship
+        
+        # Ensure the user gets at least 5 friends
+        friends_to_add = random.sample(potential_friends, 5)  # Select 5 friends randomly
+        for friend in friends_to_add:
+            # Check if the friendship already exists (avoid duplicates)
+            if not db.session.query(FriendRequest).filter(
+                (FriendRequest.sender_id == user.id) & (FriendRequest.receiver_id == friend.id) | 
+                (FriendRequest.sender_id == friend.id) & (FriendRequest.receiver_id == user.id)
+            ).first():
+                friendships.append(
+                    FriendRequest(
+                        sender_id=user.id,
+                        receiver_id=friend.id,
+                        status="pending"  # Change to "pending" if "accepted" isn't valid
+                    )
                 )
-            )
-
-    db.session.add_all(friend_requests)  # Add friend requests to session
+    
+    db.session.add_all(friendships)  # Add the friendship requests to session
     db.session.commit()  # Commit to database
 
-    print(f"{len(friend_requests)} friend requests successfully added.")
+    print(f"{len(friendships)} friendships successfully added.")
 
-def add_users_to_events(users, events):
-    if not events:
-        print("No events available to assign users.")
-        return
+
+
+def add_users_to_events(users, events, max_events_per_user=5):
+    # Clear the user_event table first to ensure a clean slate
+    db.session.query(user_event).delete()
+    db.session.commit()
 
     for user in users:
-        num_events = random.randint(1, min(3, len(events)))  # 1-3 events per user
-        selected_events = random.sample(events, num_events)
+        # Randomly select a subset of events for the user
+        events_to_assign = random.sample(events, min(len(events), max_events_per_user))  # Ensure user attends max_events_per_user or less
+        
+        for event in events_to_assign:
+            # Add the user to the event
+            event.attendees.append(user)
+        
+        db.session.commit()  # Commit the changes after adding users to events
 
-        for event in selected_events:
-            user.events.append(event)  # Many-to-many relationship
-
-    db.session.commit()
     print(f"Assigned users to events.")
+
+
 
 def seed_data():
     print("Clearing existing data...")
@@ -91,12 +104,12 @@ def seed_data():
         print("Error: No users were created.")
         return
     
-    print("Seeding Friend Requests...")
-    create_friend_requests(users)  # Pass users to create_friend_requests
-    print("Friend Requests successfully added.")
+    print("Seeding Friendships...")
+    create_friendships(users)  # Create friendships for users
+    print("Friendships successfully added.")
 
     print("Assigning Users to Events...")
-    add_users_to_events(users, events)
+    add_users_to_events(users, events)  # Assign users to events
     print("Users assigned to events.")
 
 if __name__ == "__main__":

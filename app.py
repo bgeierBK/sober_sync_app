@@ -381,6 +381,32 @@ def get_rsvped_users(event_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+from flask import jsonify
+from server.models import ChatMessage
+
+@app.route("/api/events/<int:eventId>/chat_messages", methods=["GET"])
+def get_chat_messages(eventId):
+    try:
+        messages = ChatMessage.query.filter_by(eventId=eventId).all()
+        if not messages:
+            print(f"No messages found for event ID {eventId}")
+        
+        result = [
+            {
+                "username": msg.username,
+                "message": msg.message,
+                "timestamp": msg.timestamp.isoformat(),
+            }
+            for msg in messages
+        ]
+        return jsonify(result), 200
+    except Exception as e:
+        print(f"Error fetching chat messages: {str(e)}")
+        return jsonify({"error": "Error fetching chat messages"}), 500
+
+
+
+
 
 
 

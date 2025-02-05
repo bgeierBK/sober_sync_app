@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import ChatRoom from "../components/ChatRoom";
 
 function EventPage() {
-  const { eventId } = useParams();
+  const { eventId } = useParams(); // Grabbing eventId from the URL
   const [loggedIn, setLoggedIn] = useState(false);
   const [friends, setFriends] = useState([]);
   const [otherUsers, setOtherUsers] = useState([]);
@@ -44,10 +44,9 @@ function EventPage() {
   return (
     <div>
       <h2>Welcome to the Event Page</h2>
-
       {/* Chat Room */}
-      {loggedIn && <ChatRoom eventId={eventId} />}
-
+      {loggedIn && <ChatRoom eventId={eventId} />}{" "}
+      {/* Pass eventId to ChatRoom */}
       {/* RSVPed Users Section */}
       <div>
         {loggedIn ? (
