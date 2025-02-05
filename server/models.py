@@ -205,7 +205,7 @@ class ChatMessage(db.Model, SerializerMixin):
     )
 
     id = db.Column(db.Integer, primary_key=True)
-    eventId = db.Column(db.Integer, db.ForeignKey('events_table.id'), nullable=False)
+    event_id = db.Column('event_id', db.Integer, db.ForeignKey('events_table.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
     username = db.Column(db.String(80), nullable=False)
     message = db.Column(db.Text, nullable=False)

@@ -1,6 +1,6 @@
 import random
 from flask_bcrypt import Bcrypt
-from server.models import db, User, Event, FriendRequest, user_event
+from server.models import db, User, Event, FriendRequest, user_event, friend_association
 from server.api_utils import fetch_and_add_events
 from app import app  # Import your Flask app here
 
@@ -44,11 +44,13 @@ def create_friendships(users):
         # Ensure the user gets at least 5 friends
         friends_to_add = random.sample(potential_friends, 5)  # Select 5 friends randomly
         for friend in friends_to_add:
-            # Check if the friendship already exists (avoid duplicates)
-            if not db.session.query(FriendRequest).filter(
-                (FriendRequest.sender_id == user.id) & (FriendRequest.receiver_id == friend.id) | 
-                (FriendRequest.sender_id == friend.id) & (FriendRequest.receiver_id == user.id)
-            ).first():
+            # Check if the friendship already exists in friend_association
+            existing_friendship = db.session.query(friend_association).filter(
+                (friend_association.c.user_id == user.id) & (friend_association.c.friend_id == friend.id) | 
+                (friend_association.c.user_id == friend.id) & (friend_association.c.friend_id == user.id)
+            ).first()
+
+            if not existing_friendship:
                 friendships.append(
                     FriendRequest(
                         sender_id=user.id,
@@ -56,11 +58,23 @@ def create_friendships(users):
                         status="pending"  # Change to "pending" if "accepted" isn't valid
                     )
                 )
-    
-    db.session.add_all(friendships)  # Add the friendship requests to session
-    db.session.commit()  # Commit to database
+
+                # Manually add the friendship to the friend_association table
+                db.session.execute(
+                    friend_association.insert().values(user_id=user.id, friend_id=friend.id)
+                )
+                db.session.execute(
+                    friend_association.insert().values(user_id=friend.id, friend_id=user.id)
+                )
+
+    # Add all friend requests to the session
+    if friendships:
+        db.session.add_all(friendships)
+        db.session.commit()
 
     print(f"{len(friendships)} friendships successfully added.")
+
+
 
 
 

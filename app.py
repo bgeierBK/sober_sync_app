@@ -42,7 +42,7 @@ migrate = Migrate(app, db)
 
 # Fetch events when the app starts up (if needed)
 with app.app_context():
-    fetch_and_add_events()
+   fetch_and_add_events()
 
 # Example root route
 @app.route('/')
