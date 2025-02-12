@@ -16,11 +16,11 @@ class User(db.Model, SerializerMixin):
 
     serialize_rules = (
         '-messages',
-        '-events',
         '-sent_requests',
         '-received_requests',
         '-friends',
-        '-related_friends'
+        '-related_friends',
+        'events'  
     )
 
     id = db.Column(db.Integer, primary_key=True)
