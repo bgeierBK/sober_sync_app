@@ -250,6 +250,31 @@ def rsvp_to_event(event_id):
 
     return {'message': 'RSVP successful', 'event': event.to_dict()}, 200
 
+@app.post('/api/events/<int:event_id>/cancel_rsvp')
+def cancel_rsvp(event_id):
+    if 'user_id' not in session:
+        return {'error': 'You must be logged in to cancel RSVP'}, 401
+
+    user_id = session['user_id']
+    event = Event.query.get(event_id)
+    user = User.query.get(user_id)
+
+    if not event:
+        return {'error': 'Event not found'}, 404
+    if not user:
+        return {'error': 'User not found'}, 404
+
+    # Check if the user is attending the event
+    if event not in user.events:
+        return {'error': 'You are not RSVP\'d for this event'}, 400
+
+    # Remove RSVP
+    user.events.remove(event)
+    db.session.commit()
+
+    return {'message': 'RSVP canceled successfully'}
+
+
 #friend request routes
 
 @app.get("/api/friend-requests")

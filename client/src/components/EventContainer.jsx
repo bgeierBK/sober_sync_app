@@ -28,7 +28,7 @@ function EventContainer({ events, setEvents }) {
 
   return (
     <>
-      <h2>This is the event container</h2>
+      <h2>Upcoming Events</h2>
       {mappedEvents}
     </>
   );

@@ -14,7 +14,42 @@ function UserProfile() {
   const [incomingFriendRequest, setIncomingFriendRequest] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch the logged-in user's info
+  // Fetch user profile
+  const fetchUserProfile = async () => {
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      const data = await response.json();
+      setUser(data);
+      setLoading(false);
+
+      if (loggedInUser) {
+        setIsFriends(
+          data.friend_list.some((friend) => friend.id === loggedInUser.id)
+        );
+
+        setFriendRequestSent(
+          data.friend_requests_received?.some(
+            (req) => req.sender_id === loggedInUser.id
+          )
+        );
+
+        const incomingRequest = data.friend_requests_list?.find(
+          (req) => req.sender_id === userId
+        );
+        setIncomingFriendRequest(incomingRequest);
+      }
+    } catch (error) {
+      setError(error.message);
+      setLoading(false);
+    }
+  };
+
+  // Fetch logged-in user
   useEffect(() => {
     fetch("/api/me", { credentials: "include" })
       .then((res) => res.json())
@@ -26,55 +61,83 @@ function UserProfile() {
       .catch((err) => console.error("Error fetching logged-in user:", err));
   }, []);
 
-  // Fetch the user profile info
+  // Fetch user profile on mount and when dependencies change
   useEffect(() => {
-    fetch(`/api/users/${userId}`, { credentials: "include" })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        setUser(data);
-        setLoading(false);
-
-        if (loggedInUser) {
-          setIsFriends(
-            data.friend_list.some((friend) => friend.id === loggedInUser.id)
-          );
-
-          setFriendRequestSent(
-            data.friend_requests_received?.some(
-              (req) => req.sender_id === loggedInUser.id
-            )
-          );
-
-          const incomingRequest = data.friend_requests_list?.find(
-            (req) => req.sender_id === userId
-          );
-          setIncomingFriendRequest(incomingRequest);
-        }
-      })
-      .catch((error) => {
-        setError(error.message);
-        setLoading(false);
-      });
+    fetchUserProfile();
   }, [userId, loggedInUser]);
 
-  // Function to format "sober_status" (if needed)
-  const formatSoberStatus = (status) => {
-    switch (status) {
-      case "sober":
-        return "Sober";
-      case "moderate":
-        return "Moderate Drinker";
-      case "social":
-        return "Social Drinker";
-      case "non-drinker":
-        return "Non-Drinker";
-      default:
-        return "Not specified";
+  // Fetch Friend Requests
+  const fetchFriendRequests = async () => {
+    try {
+      const response = await fetch("/api/friend-requests", {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // You can use this data to update friend request states if needed
+      } else {
+        console.error("Error fetching friend requests");
+      }
+    } catch (error) {
+      console.error("Error fetching friend requests:", error);
+    }
+  };
+
+  // Send Friend Request
+  const handleAddFriend = async () => {
+    try {
+      const response = await fetch("/api/friend-request", {
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({ receiver_id: userId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        setFriendRequestSent(true);
+      } else {
+        console.error("Failed to send friend request");
+      }
+    } catch (error) {
+      console.error("Error sending friend request:", error);
+    }
+  };
+
+  // Accept Friend Request
+  const handleAcceptFriendRequest = async (requestId) => {
+    try {
+      const response = await fetch(`/api/friend-request/${requestId}/approve`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        fetchUserProfile(); // Refresh user data after accepting
+      } else {
+        console.error("Failed to accept friend request");
+      }
+    } catch (error) {
+      console.error("Error accepting friend request:", error);
+    }
+  };
+
+  // Reject Friend Request
+  const handleRejectFriendRequest = async (requestId) => {
+    try {
+      const response = await fetch(`/api/friend-request/${requestId}/reject`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        fetchUserProfile(); // Refresh user data after rejecting
+      } else {
+        console.error("Failed to reject friend request");
+      }
+    } catch (error) {
+      console.error("Error rejecting friend request:", error);
     }
   };
 
@@ -89,21 +152,9 @@ function UserProfile() {
         <strong>Bio:</strong> {user.bio || "No bio available"}
       </p>
 
-      {/* Additional User Details */}
-      <p>
-        <strong>Sober Status:</strong> {formatSoberStatus(user.sober_status)}
-      </p>
-      <p>
-        <strong>Orientation:</strong> {user.orientation || "Not specified"}
-      </p>
-      <p>
-        <strong>Gender:</strong> {user.gender || "Not specified"}
-      </p>
-
-      {/* Friends List */}
       <div className="friends-list">
         <h4>Friends</h4>
-        {user.friend_list && user.friend_list.length > 0 ? (
+        {user.friend_list.length > 0 ? (
           <ul>
             {user.friend_list.map((friend) => (
               <li key={friend.id}>
@@ -116,11 +167,11 @@ function UserProfile() {
         )}
       </div>
 
-      {/* Friend Requests Section (Only visible when viewing own profile) */}
+      {/* Friend Requests */}
       {loggedInUser && loggedInUser.id === user.id && (
         <div className="friend-requests-list">
           <h4>Friend Requests</h4>
-          {user.friend_requests_list && user.friend_requests_list.length > 0 ? (
+          {user.friend_requests_list.length > 0 ? (
             <ul>
               {user.friend_requests_list.map((req) => (
                 <li key={req.id}>
@@ -173,10 +224,10 @@ function UserProfile() {
         </div>
       )}
 
-      {/* Events RSVPed To */}
+      {/* Events */}
       <div className="events-list">
         <h4>Events Attending</h4>
-        {user.events && user.events.length > 0 ? (
+        {user.events.length > 0 ? (
           <ul>
             {user.events.map((event) => (
               <li key={event.id}>
