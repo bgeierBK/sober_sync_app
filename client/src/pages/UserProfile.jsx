@@ -1,6 +1,6 @@
 import "../App.css";
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 
 function UserProfile() {
   const { id } = useParams();
@@ -12,7 +12,6 @@ function UserProfile() {
   const [isFriends, setIsFriends] = useState(false);
   const [friendRequestSent, setFriendRequestSent] = useState(false);
   const [incomingFriendRequest, setIncomingFriendRequest] = useState(null);
-  const navigate = useNavigate();
 
   // Fetch user profile
   const fetchUserProfile = async () => {

@@ -1,9 +1,7 @@
-import { useState, useEffect } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useEffect } from "react";
 import EventCard from "./EventCard";
 
-// eslint-disable-next-line react/prop-types
-function EventContainer({ events, setEvents }) {
+function EventContainer({ events, setEvents, currentUser, setCurrentUser }) {
   useEffect(() => {
     fetch("/api/events")
       .then((res) => res.json())
@@ -13,18 +11,15 @@ function EventContainer({ events, setEvents }) {
   }, [setEvents]);
 
   const mappedEvents = events
-    // eslint-disable-next-line react/prop-types
     .filter((event) => event.name !== "Unnamed Event")
-    .map((event) => {
-      return (
-        <EventCard
-          key={event.id}
-          events={events}
-          setEvents={setEvents}
-          event={event}
-        />
-      );
-    });
+    .map((event) => (
+      <EventCard
+        key={event.id}
+        event={event}
+        currentUser={currentUser}
+        setCurrentUser={setCurrentUser}
+      />
+    ));
 
   return (
     <>
