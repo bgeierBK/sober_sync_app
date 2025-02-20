@@ -1,21 +1,15 @@
 import os
 import sys
 from flask import Flask, request, session, jsonify
-from flask_socketio import SocketIO, join_room, leave_room, send
+from flask_socketio import SocketIO
 from flask_migrate import Migrate
 from server import create_app
 from server.api_utils import fetch_and_add_events
 from server.models import User, Event, ChatMessage, FriendRequest
 from server.extensions import db, bcrypt
-from redis import Redis
-from flask_session import Session
-from datetime import timedelta
 from flask_cors import CORS
-from flask import jsonify
-
-
-# Enable CORS
- # This will allow your frontend to send and receive cookies
+import cloudinary.uploader
+import cloudinary.api
 
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -23,17 +17,45 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Create and configure the app
 app = create_app()
 
-CORS(app, supports_credentials=True) 
+CORS(app, supports_credentials=True)
 
-# Initialize SocketIO (make sure it's initialized after `create_app()` is called)
+# Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# app.config['SESSION_PERMANENT'] = True
-# app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-# app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Ensure cookies are sent cross-origin
-# app.config['SESSION_COOKIE_SECURE'] = False     # Set to True in production if using HTTPS
-# app.config['SESSION_TYPE'] = 'redis'            # Using Redis for session storage
-# app.config['SESSION_REDIS'] = Redis.from_url('redis://localhost:6379')  # Adjust Redis URL as needed
+# Cloudinary configuration
+cloudinary.config(
+    cloud_name=os.getenv("CLOUD_NAME", "dxtkrqdmo"),  # Ensure you set this in .env file or pass it here
+    api_key=os.getenv("CLOUDINARY_API_KEY", "562345124685953"),  # Ensure this is set in .env or pass it here
+    api_secret=os.getenv("CLOUDINARY_API_SECRET", "4pgVbgO8NdaOWgR7Zdz9GQ4Qaso"),  # Ensure this is set in .env or pass it here
+    secure=True
+)
+
+# Function to upload image to Cloudinary
+def upload_image(file):
+    try:
+        response = cloudinary.uploader.upload(file)
+        return response['secure_url']  # This returns the image URL
+    except Exception as e:
+        print(f"Error uploading image: {e}")
+        return None
+
+# Example upload route
+@app.route('/api/upload-image', methods=['POST'])
+def upload_image_endpoint():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image file found'}), 400
+
+    image_file = request.files['image']
+    if image_file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    # Upload the image to Cloudinary and get the URL
+    image_url = upload_image(image_file)
+    if image_url:
+        return jsonify({'image_url': image_url}), 200
+    else:
+        return jsonify({'error': 'Failed to upload image'}), 500
+
 
 
 # Initialize Flask-Session
@@ -55,6 +77,7 @@ def home():
 def favicon():
     return "", 204
 
+
 # Fetch and import events route
 @app.route('/api/import-events', methods=['POST'])
 def import_events():
@@ -68,6 +91,7 @@ def import_events():
 @app.post('/api/users')
 def create_user():
     try:
+        # Extract the user details from the request JSON
         new_user = User(
             username=request.json.get('username'),
             age=int(request.json.get('age')),
@@ -76,18 +100,26 @@ def create_user():
             gender=request.json.get('gender'),
             orientation=request.json.get('orientation'),
             sober_status=request.json.get('sober_status'),
+            photo_url=request.json.get('profile_image_url')  # Capture the profile image URL
         )
+        
+        # Hash the password
         new_user.hashed_password = request.json.get('password')
+
+        # Add the new user to the session and commit
         db.session.add(new_user)
         db.session.commit()
 
         # Set session
         session['user_id'] = new_user.id
         session.permanent = True  # Explicitly make the session permanent
+        
+        # Return the user data as a dictionary
         return new_user.to_dict(), 201
     except Exception as e:
         print(f"Error: {e}")
         return {'error': str(e)}, 406
+
 
 @app.get("/api/check_session")
 def check_session():
@@ -435,11 +467,6 @@ def get_chat_messages(id):
     except Exception as e:
         print(f"Error fetching chat messages for event ID {id}: {str(e)}")
         return jsonify({"error": "Error fetching chat messages"}), 500
-
-
-
-
-
 
 
 

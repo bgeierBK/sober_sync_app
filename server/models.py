@@ -32,6 +32,7 @@ class User(db.Model, SerializerMixin):
     gender = db.Column(db.String)
     orientation = db.Column(db.String)
     sober_status = db.Column(db.String)
+    photo_url = db.Column(db.String(255))
 
     # Relationships
     messages = db.relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan", lazy='select')

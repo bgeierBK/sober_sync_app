@@ -10,39 +10,85 @@ function SignUpComponent() {
   const [gender, setGender] = useState("");
   const [orientation, setOrientation] = useState("");
   const [soberStatus, setSoberStatus] = useState("");
+  const [profileImage, setProfileImage] = useState(null); // state for the image
   const navigate = useNavigate();
   const { setCurrentUser } = useOutletContext();
 
-  function handleSubmit(event) {
+  // Function to handle the image upload to Cloudinary
+  const uploadImageToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const response = await fetch("/api/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Image upload failed");
+      }
+
+      const data = await response.json();
+      return data.image_url; // returns the Cloudinary image URL
+    } catch (error) {
+      console.error("Error uploading image: ", error);
+      alert("Image upload failed. Please try again.");
+      return null;
+    }
+  };
+
+  async function handleSubmit(event) {
     event.preventDefault();
-    fetch("/api/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username: userName, // this key needs to match what the backend expects
-        age: age,
-        password: password,
-        email_address: emailAddress, // backend expects `email_address` (snake_case)
-        bio: bio,
-        gender: gender,
-        orientation: orientation,
-        sober_status: soberStatus, // backend expects `sober_status` (snake_case)
-      }),
-    }).then((response) => {
+
+    // Upload the image if it was selected
+    const imageUrl = profileImage
+      ? await uploadImageToCloudinary(profileImage)
+      : null;
+
+    if (!imageUrl && profileImage) {
+      return; // Prevent form submission if image upload failed
+    }
+
+    const userData = {
+      username: userName,
+      age: age,
+      password: password,
+      email_address: emailAddress,
+      bio: bio,
+      gender: gender,
+      orientation: orientation,
+      sober_status: soberStatus,
+      profile_image_url: imageUrl, // Add the Cloudinary image URL here
+    };
+
+    try {
+      const response = await fetch("/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      });
+
       if (response.ok) {
-        response.json().then((newUser) => setCurrentUser(newUser));
+        const newUser = await response.json();
+        setCurrentUser(newUser);
         navigate("/");
       } else {
-        alert("Problem with signup");
+        const errorData = await response.json();
+        alert(errorData?.message || "Problem with signup");
       }
-    });
+    } catch (error) {
+      console.error("Error during signup: ", error);
+      alert("There was an error with the signup process. Please try again.");
+    }
   }
 
   return (
     <form onSubmit={handleSubmit}>
       <h3>Sign Up</h3>
+      {/* Existing form fields */}
       <div>
         <label>
           User Name:
@@ -142,6 +188,16 @@ function SignUpComponent() {
             <option value="pan">Pansexual</option>
             <option value="aro/ace">Asexual/Aromantic</option>
           </select>
+        </label>
+      </div>
+      <div>
+        <label>
+          Profile Image:
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setProfileImage(e.target.files[0])}
+          />
         </label>
       </div>
       <div>
