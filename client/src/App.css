@@ -40,3 +40,13 @@
 .read-the-docs {
   color: #888;
 }
+
+.profile-picture {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  margin: 10px auto;
+  border: 2px solid #ccc;
+}

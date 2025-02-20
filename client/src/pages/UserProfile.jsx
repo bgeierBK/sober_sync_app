@@ -13,6 +13,8 @@ function UserProfile() {
   const [friendRequestSent, setFriendRequestSent] = useState(false);
   const [incomingFriendRequest, setIncomingFriendRequest] = useState(null);
 
+  const fallbackImagePath = "/blank_profile.webp";
+
   // Fetch user profile
   const fetchUserProfile = async () => {
     try {
@@ -147,6 +149,15 @@ function UserProfile() {
   return (
     <div className="user-profile">
       <h3>{user.username}</h3>
+      <img
+        src={user.photo_url || fallbackImagePath}
+        alt={`${user.username}'s profile`}
+        className="profile-picture"
+        onError={(e) => {
+          e.target.onerror = null; // Prevent infinite loop
+          e.target.src = fallbackImagePath;
+        }}
+      />
       <p>
         <strong>Bio:</strong> {user.bio || "No bio available"}
       </p>
