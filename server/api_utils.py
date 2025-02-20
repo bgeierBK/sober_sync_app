@@ -57,41 +57,38 @@ def fetch_and_add_events():
         print(f"Error: Failed to decode JSON from response: {response.text}")
         return
 
-    # Clear the events table before refilling
-    with db.session.begin():
-        db.session.query(Event).delete()
+    existing_events = {(event.name, event.date) for event in Event.query.all()}  # Get existing event (name, date) pairs
 
-    print("Events table cleared.")
-
-    # Add new events
-    events = []
+    new_events = []
     for event in events_data['data']:
         try:
-            # Ensure the city contains "NY"
             venue = event.get("venue", {})
             city = venue.get("location", "Unknown City")
             if not isinstance(city, str) or "NY" not in city:
                 continue  # Skip events not in NYC
 
-            # Process event data with fallback values
             event_name = event.get("name", "Unnamed Event") or "Unnamed Event"
+            if event_name == "Unnamed Event":
+                continue  # Skip unnamed events
+
+            event_date = event.get("date", "Unknown Date")
             venue_name = venue.get("name", "Unknown Location") or "Unknown Location"
 
-            events.append(Event(
-                name=event_name.strip() if isinstance(event_name, str) else "Unnamed Event",
-                date=event.get("date", "Unknown Date"),
-                venue_name=venue_name.strip() if isinstance(venue_name, str) else "Unknown Location",
-                city=city.strip() if isinstance(city, str) else "Unknown City"
-            ))
+            if (event_name, event_date) not in existing_events:  # Avoid duplicates
+                new_events.append(Event(
+                    name=event_name.strip(),
+                    date=event_date,
+                    venue_name=venue_name.strip(),
+                    city=city.strip()
+                ))
 
         except Exception as e:
             print(f"Error processing event: {event.get('name', 'Unnamed Event')}. Error: {str(e)}")
             continue
 
-    # Bulk insert new events
-    with db.session.begin():
-        db.session.bulk_save_objects(events)
-
-    print("Events successfully added.")
-
-
+    if new_events:
+        db.session.add_all(new_events)  # Add all new events to the session
+        db.session.commit()  # Commit the session to save the new events
+        print(f"{len(new_events)} new events successfully added.")
+    else:
+        print("No new events to add.")

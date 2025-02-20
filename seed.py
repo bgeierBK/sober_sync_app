@@ -6,6 +6,11 @@ from app import app  # Import your Flask app here
 
 bcrypt = Bcrypt(app)  # Initialize bcrypt with Flask app
 
+# Define possible values for each attribute
+SOBER_STATUSES = ["abstinent", "sober-curious", "california sober"]
+GENDERS = ["male", "female", "non-binary"]
+ORIENTATIONS = ["Straight", "Gay", "Bisexual", "Pansexual"]
+
 def create_users():
     names = [
         "Alice", "Bobby", "Charlie", "David", "Eve-May", "Frank", "Grace", "Hannah", "Ivysaur", "Jackson",
@@ -13,13 +18,16 @@ def create_users():
         "Umathurman", "Reginald", "Willy", "Xander", "Yaral", "Zanestopher"
     ]
     
-    # Create user instances with hashed passwords
+    # Create user instances with randomized sober status, gender, and orientation
     users = [
         User(
             username=names[i], 
             email_address=f"user{i+1}@example.com", 
             _hashed_password=bcrypt.generate_password_hash("password").decode('utf-8'), 
-            age=25  # Default age set to 25
+            age=25,  # Default age set to 25
+            sober_status=random.choice(SOBER_STATUSES),
+            gender=random.choice(GENDERS),
+            orientation=random.choice(ORIENTATIONS)
         )
         for i in range(len(names))
     ]
@@ -82,13 +90,6 @@ def create_friendships(users):
     print(f"{len(friendships)} friendships successfully added.")
 
 
-
-
-
-
-
-
-
 def add_users_to_events(users, events, max_events_per_user=5):
     # Clear the user_event table first to ensure a clean slate
     db.session.query(user_event).delete()
@@ -107,7 +108,7 @@ def add_users_to_events(users, events, max_events_per_user=5):
     print(f"Assigned users to events.")
 
 
-
+# In seed.py
 def seed_data():
     print("Clearing existing data...")
     db.session.query(User).delete()
@@ -117,7 +118,7 @@ def seed_data():
     print("Database cleared.")
 
     print("Fetching and Seeding Events...")
-    fetch_and_add_events()
+    fetch_and_add_events()  # Now works without needing a new transaction
 
     print("Fetching Existing Events...")
     events = Event.query.all()
@@ -139,12 +140,4 @@ def seed_data():
 
 if __name__ == "__main__":
     with app.app_context():  # Ensure that we run the script within the app context
-        print("Clearing existing data...")
-        with db.session.begin():
-            db.session.query(User).delete()
-            db.session.query(Event).delete()
-            db.session.query(FriendRequest).delete()
-        db.session.commit()
-        print("Database cleared.")
-
-        seed_data()
+        seed_data()  # Seed the data within the app context
