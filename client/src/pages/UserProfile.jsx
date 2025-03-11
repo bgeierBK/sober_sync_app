@@ -12,6 +12,8 @@ function UserProfile() {
   const [isFriends, setIsFriends] = useState(false);
   const [friendRequestSent, setFriendRequestSent] = useState(false);
   const [incomingFriendRequest, setIncomingFriendRequest] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedUser, setEditedUser] = useState(null);
 
   const fallbackImagePath = "/blank_profile.webp";
 
@@ -64,27 +66,51 @@ function UserProfile() {
 
   // Fetch user profile on mount and when dependencies change
   useEffect(() => {
-    fetchUserProfile();
+    if (loggedInUser) {
+      fetchUserProfile();
+    }
   }, [userId, loggedInUser]);
 
-  // Fetch Friend Requests
-  const fetchFriendRequests = async () => {
+  const handleEditProfile = () => {
+    setEditedUser({
+      bio: user.bio || "",
+      photo_url: user.photo_url || "",
+      question1_answer: user.question1_answer || "",
+      question2_answer: user.question2_answer || "",
+      question3_answer: user.question3_answer || "",
+    });
+    setIsEditing(true);
+  };
+
+  const handleSaveProfile = async () => {
     try {
-      const response = await fetch("/api/friend-requests", {
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
+        body: JSON.stringify(editedUser),
       });
-      if (response.ok) {
-        const data = await response.json();
-        // You can use this data to update friend request states if needed
-      } else {
-        console.error("Error fetching friend requests");
+
+      if (!response.ok) {
+        throw new Error("Failed to save profile");
       }
-    } catch (error) {
-      console.error("Error fetching friend requests:", error);
+
+      const updatedData = await response.json();
+      setUser(updatedData);
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Error saving profile:", err);
     }
   };
 
-  // Send Friend Request
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedUser(null);
+  };
+
+  // Friend request functions (unchanged)
   const handleAddFriend = async () => {
     try {
       const response = await fetch("/api/friend-request", {
@@ -106,7 +132,6 @@ function UserProfile() {
     }
   };
 
-  // Accept Friend Request
   const handleAcceptFriendRequest = async (requestId) => {
     try {
       const response = await fetch(`/api/friend-request/${requestId}/approve`, {
@@ -124,7 +149,6 @@ function UserProfile() {
     }
   };
 
-  // Reject Friend Request
   const handleRejectFriendRequest = async (requestId) => {
     try {
       const response = await fetch(`/api/friend-request/${requestId}/reject`, {
@@ -154,17 +178,85 @@ function UserProfile() {
         alt={`${user.username}'s profile`}
         className="profile-picture"
         onError={(e) => {
-          e.target.onerror = null; // Prevent infinite loop
+          e.target.onerror = null;
           e.target.src = fallbackImagePath;
         }}
       />
-      <p>
-        <strong>Bio:</strong> {user.bio || "No bio available"}
-      </p>
+
+      {isEditing && editedUser ? (
+        <div className="edit-profile">
+          <label>Bio:</label>
+          <textarea
+            value={editedUser.bio}
+            onChange={(e) =>
+              setEditedUser({ ...editedUser, bio: e.target.value })
+            }
+            maxLength={300}
+          />
+          <label>Photo URL:</label>
+          <input
+            type="text"
+            value={editedUser.photo_url}
+            onChange={(e) =>
+              setEditedUser({ ...editedUser, photo_url: e.target.value })
+            }
+          />
+          <label>Question 1:</label>
+          <textarea
+            value={editedUser.question1_answer}
+            onChange={(e) =>
+              setEditedUser({ ...editedUser, question1_answer: e.target.value })
+            }
+            maxLength={300}
+          />
+          <label>Question 2:</label>
+          <textarea
+            value={editedUser.question2_answer}
+            onChange={(e) =>
+              setEditedUser({ ...editedUser, question2_answer: e.target.value })
+            }
+            maxLength={300}
+          />
+          <label>Question 3:</label>
+          <textarea
+            value={editedUser.question3_answer}
+            onChange={(e) =>
+              setEditedUser({ ...editedUser, question3_answer: e.target.value })
+            }
+            maxLength={300}
+          />
+          <button onClick={handleSaveProfile}>Save Changes</button>
+          <button onClick={handleCancelEdit}>Cancel</button>
+        </div>
+      ) : (
+        <>
+          <p>
+            <strong>Bio:</strong> {user.bio || "No bio available"}
+          </p>
+          {user.question1_answer && (
+            <p>
+              <strong>Q1:</strong> {user.question1_answer}
+            </p>
+          )}
+          {user.question2_answer && (
+            <p>
+              <strong>Q2:</strong> {user.question2_answer}
+            </p>
+          )}
+          {user.question3_answer && (
+            <p>
+              <strong>Q3:</strong> {user.question3_answer}
+            </p>
+          )}
+          {loggedInUser && loggedInUser.id === user.id && (
+            <button onClick={handleEditProfile}>Edit Profile</button>
+          )}
+        </>
+      )}
 
       <div className="friends-list">
         <h4>Friends</h4>
-        {user.friend_list.length > 0 ? (
+        {user.friend_list?.length > 0 ? (
           <ul>
             {user.friend_list.map((friend) => (
               <li key={friend.id}>
@@ -181,7 +273,7 @@ function UserProfile() {
       {loggedInUser && loggedInUser.id === user.id && (
         <div className="friend-requests-list">
           <h4>Friend Requests</h4>
-          {user.friend_requests_list.length > 0 ? (
+          {user.friend_requests_list?.length > 0 ? (
             <ul>
               {user.friend_requests_list.map((req) => (
                 <li key={req.id}>
@@ -199,57 +291,26 @@ function UserProfile() {
               ))}
             </ul>
           ) : (
-            <p>No pending friend requests</p>
+            <p>No friend requests</p>
           )}
         </div>
       )}
 
-      {/* Friend Actions */}
-      {loggedInUser && loggedInUser.id !== user.id && (
-        <div className="friend-action">
-          {isFriends ? (
-            <p>You and {user.username} are already friends.</p>
-          ) : incomingFriendRequest ? (
-            <div>
-              <button
-                onClick={() =>
-                  handleAcceptFriendRequest(incomingFriendRequest.id)
-                }
-              >
-                Accept Friend Request
-              </button>
-              <button
-                onClick={() =>
-                  handleRejectFriendRequest(incomingFriendRequest.id)
-                }
-              >
-                Deny Friend Request
-              </button>
-            </div>
-          ) : friendRequestSent ? (
-            <p>Friend request sent!</p>
-          ) : (
-            <button onClick={handleAddFriend}>Add Friend</button>
-          )}
-        </div>
+      {/* Buttons for adding and removing friends */}
+      {!isFriends && !friendRequestSent && (
+        <button onClick={handleAddFriend}>Send Friend Request</button>
       )}
 
-      {/* Events */}
-      <div className="events-list">
-        <h4>Events Attending</h4>
-        {user.events.length > 0 ? (
-          <ul>
-            {user.events.map((event) => (
-              <li key={event.id}>
-                <Link to={`/events/${event.id}`}>{event.name}</Link> -{" "}
-                {event.date} at {event.venue_name}, {event.city}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No events RSVPed to yet</p>
-        )}
-      </div>
+      {isFriends && <button>Unfriend</button>}
+      {friendRequestSent && <p>Friend request sent</p>}
+      {incomingFriendRequest && (
+        <p>
+          You have an incoming friend request from{" "}
+          <Link to={`/users/${incomingFriendRequest.sender_id}`}>
+            {incomingFriendRequest.sender_username}
+          </Link>
+        </p>
+      )}
     </div>
   );
 }
