@@ -207,23 +207,23 @@ def delete_user(id):
     return {'error': 'User not found'}, 404
 
 # Chat message routes
-@app.get('/api/events/<int:eventId>/chat_messages')
-def get_event_chat_messages(eventId):
+@app.get('/api/events/<int:event_id>/chat_messages')
+def get_event_chat_messages(event_id):
     try:
         # Find the event by ID
-        event = Event.query.get(eventId)
+        event = Event.query.get(event_id)
         if not event:
             return jsonify({'error': 'Event not found'}), 404
 
         # Fetch chat messages for the event
-        chat_messages = ChatMessage.query.filter_by(eventId=eventId).all()
+        chat_messages = ChatMessage.query.filter_by(event_id=event_id).all()
         if not chat_messages:
             return jsonify({'error': 'No chat messages found for this event'}), 404
 
         # Return messages as a list of dictionaries
         return jsonify([message.to_dict() for message in chat_messages]), 200
     except Exception as e:
-        print(f"Error fetching chat messages for event {eventId}: {e}")
+        print(f"Error fetching chat messages for event {event_id}: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 
