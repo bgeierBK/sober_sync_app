@@ -297,9 +297,12 @@ function UserProfile() {
       )}
 
       {/* Buttons for adding and removing friends */}
-      {!isFriends && !friendRequestSent && (
-        <button onClick={handleAddFriend}>Send Friend Request</button>
-      )}
+      {loggedInUser &&
+        loggedInUser.id !== user.id &&
+        !isFriends &&
+        !friendRequestSent && (
+          <button onClick={handleAddFriend}>Send Friend Request</button>
+        )}
 
       {isFriends && <button>Unfriend</button>}
       {friendRequestSent && <p>Friend request sent</p>}

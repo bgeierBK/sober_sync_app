@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import socket from "/Users/ben/Development/code/personal_projects/sober_sync_app/socket.js";
 
-// eslint-disable-next-line react/prop-types
 const ChatRoom = ({ event_id, username }) => {
-  // Using camelCase for eventId
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState("");
@@ -14,51 +12,61 @@ const ChatRoom = ({ event_id, username }) => {
       return;
     }
 
-    // Fetch existing messages when eventId is available
+    // Fetch existing messages when component mounts
     const fetchMessages = async () => {
       try {
         const response = await fetch(`/api/events/${event_id}/chat_messages`);
-        if (!response.ok) {
+        if (!response.ok)
           throw new Error(`Error ${response.status}: ${response.statusText}`);
-        }
-
         const data = await response.json();
-        setMessages(data); // Assuming data is an array of messages
+        setMessages(data);
       } catch (err) {
         console.error("Error fetching messages:", err);
         setError("Failed to load chat messages. Please try again later.");
       }
     };
 
-    fetchMessages(); // Fetch messages when component mounts or eventId changes
+    fetchMessages();
 
-    // Join the chat room when eventId or username changes
-    socket.emit("join_room", { username, event_id: event_id });
+    // Join room for this specific event
+    socket.emit("join_room", { username, event_id });
 
-    // Listen for new messages from other users
-    socket.on("receive_message", (newMessage) => {
+    // Listen for messages specific to this event
+    const eventChannel = `receive_message_${event_id}`;
+    socket.on(eventChannel, (newMessage) => {
       setMessages((prevMessages) => [...prevMessages, newMessage]);
     });
 
-    // Cleanup: Leave the chat room and remove socket listeners when component unmounts or eventId/username changes
+    // Cleanup on unmount
     return () => {
-      socket.emit("leave_room", { username, event_id: event_id });
-      socket.off("receive_message"); // Clean up the socket listener
+      socket.emit("leave_room", { username, event_id });
+      socket.off(eventChannel);
     };
-  }, [event_id, username]); // Re-run when eventId or username changes
+  }, [event_id, username]);
 
-  // Function to handle sending messages
   const sendMessage = () => {
-    if (message.trim() === "") return; // Don't send empty messages
-    socket.emit("send_message", { event_id: event_id, username, message });
-    setMessage(""); // Clear the input field after sending
+    if (!message.trim()) return; // Prevent sending empty messages
+
+    const newMessage = {
+      event_id,
+      username,
+      message,
+    };
+
+    // Optimistically update UI
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { username, message, timestamp: new Date().toISOString() },
+    ]);
+
+    socket.emit("send_message", newMessage);
+    setMessage(""); // Clear input field
   };
 
   return (
     <div className="chat-room">
       <h2>Chat Room</h2>
-      {error && <p className="error">{error}</p>}{" "}
-      {/* Display error if there's one */}
+      {error && <p className="error">{error}</p>}
       <div className="messages">
         {messages.length > 0 ? (
           messages.map((msg, index) => (
@@ -76,11 +84,10 @@ const ChatRoom = ({ event_id, username }) => {
         <input
           type="text"
           value={message}
-          onChange={(e) => setMessage(e.target.value)} // Update message state on input change
+          onChange={(e) => setMessage(e.target.value)}
           placeholder="Type your message..."
         />
-        <button onClick={sendMessage}>Send</button>{" "}
-        {/* Send message when button clicked */}
+        <button onClick={sendMessage}>Send</button>
       </div>
     </div>
   );

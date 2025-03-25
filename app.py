@@ -469,6 +469,50 @@ def get_chat_messages(id):
         return jsonify({"error": "Error fetching chat messages"}), 500
 
 
+@socketio.on("connect")
+def handle_connect():
+    print(f"User connected: {request.sid}")
+
+@socketio.on("disconnect")
+def handle_disconnect():
+    print(f"User disconnected: {request.sid}")
+
+@socketio.on("send_message")
+def handle_send_message(data):
+    """Handles incoming chat messages and broadcasts them."""
+    event_id = data.get("event_id")
+    user_id = session.get("user_id")
+    
+    if not user_id:
+        return {"error": "User not logged in"}, 401
+
+    user = User.query.get(user_id)
+    event = Event.query.get(event_id)
+
+    if not user or not event:
+        return {"error": "Invalid event or user"}, 404
+
+    new_message = ChatMessage(
+        event_id=event_id,
+        user_id=user_id,
+        username=user.username,
+        message=data["message"]
+    )
+
+    db.session.add(new_message)
+    db.session.commit()
+
+    message_data = {
+        "id": new_message.id,
+        "username": user.username,
+        "message": new_message.message,
+        "timestamp": new_message.timestamp.isoformat()
+    }
+
+    socketio.emit(f"receive_message_{event_id}", message_data, broadcast=True)
+
+    return message_data, 201
+
 
 
 
