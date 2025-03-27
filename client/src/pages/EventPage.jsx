@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import ChatRoom from "../components/ChatRoom";
+import { useOutletContext } from "react-router-dom";
 
 function EventPage() {
   const { id } = useParams();
@@ -8,7 +9,9 @@ function EventPage() {
   const [friends, setFriends] = useState([]);
   const [otherUsers, setOtherUsers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
+  const { currentUser } = useOutletContext();
 
+  console.log(currentUser);
   useEffect(() => {
     const fetchRsvpedUsers = async () => {
       try {
@@ -44,7 +47,7 @@ function EventPage() {
   return (
     <div>
       <h2>Welcome to the Event Page</h2>
-      <ChatRoom event_id={id} />
+      <ChatRoom event_id={id} user_id={currentUser?.id || 0} />
 
       <div>
         {loggedIn ? (

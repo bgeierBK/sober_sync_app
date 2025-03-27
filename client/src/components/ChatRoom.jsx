@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import socket from "/Users/ben/Development/code/personal_projects/sober_sync_app/socket.js";
 
-const ChatRoom = ({ event_id, username }) => {
+const ChatRoom = ({ event_id, username, user_id }) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState("");
@@ -51,6 +51,7 @@ const ChatRoom = ({ event_id, username }) => {
       event_id,
       username,
       message,
+      user_id,
     };
 
     // Optimistically update UI

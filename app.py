@@ -207,24 +207,7 @@ def delete_user(id):
     return {'error': 'User not found'}, 404
 
 # Chat message routes
-@app.get('/api/events/<int:event_id>/chat_messages')
-def get_event_chat_messages(event_id):
-    try:
-        # Find the event by ID
-        event = Event.query.get(event_id)
-        if not event:
-            return jsonify({'error': 'Event not found'}), 404
 
-        # Fetch chat messages for the event
-        chat_messages = ChatMessage.query.filter_by(event_id=event_id).all()
-        if not chat_messages:
-            return jsonify({'error': 'No chat messages found for this event'}), 404
-
-        # Return messages as a list of dictionaries
-        return jsonify([message.to_dict() for message in chat_messages]), 200
-    except Exception as e:
-        print(f"Error fetching chat messages for event {event_id}: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
 
 
 # Event routes
@@ -481,7 +464,7 @@ def handle_disconnect():
 def handle_send_message(data):
     """Handles incoming chat messages and broadcasts them."""
     event_id = data.get("event_id")
-    user_id = session.get("user_id")
+    user_id = data.get("user_id")
     
     if not user_id:
         return {"error": "User not logged in"}, 401
@@ -492,6 +475,7 @@ def handle_send_message(data):
     if not user or not event:
         return {"error": "Invalid event or user"}, 404
 
+    print("messages sent")
     new_message = ChatMessage(
         event_id=event_id,
         user_id=user_id,
@@ -509,7 +493,7 @@ def handle_send_message(data):
         "timestamp": new_message.timestamp.isoformat()
     }
 
-    socketio.emit(f"receive_message_{event_id}", message_data, broadcast=True)
+    socketio.emit(f"receive_message_{event_id}", message_data)
 
     return message_data, 201
 
