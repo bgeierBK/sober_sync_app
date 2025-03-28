@@ -16,6 +16,7 @@ function UserProfile() {
   const [editedUser, setEditedUser] = useState(null);
 
   const fallbackImagePath = "/blank_profile.webp";
+  const today = new Date().toISOString().split("T")[0];
 
   // Fetch user profile
   const fetchUserProfile = async () => {
@@ -169,6 +170,9 @@ function UserProfile() {
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!user) return <div>User not found</div>;
+  const upcomingEvents =
+    user.events?.filter((event) => event.date >= today) || [];
+  const pastEvents = user.events?.filter((event) => event.date < today) || [];
 
   return (
     <div className="user-profile">
@@ -314,6 +318,37 @@ function UserProfile() {
           </Link>
         </p>
       )}
+      <div className="events-list">
+        <h4>Upcoming Events</h4>
+        {upcomingEvents.length > 0 ? (
+          <ul>
+            {upcomingEvents.map((event) => (
+              <li key={event.id}>
+                <Link to={`/events/${event.id}`}>{event.name}</Link> -{" "}
+                {event.date}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No upcoming events</p>
+        )}
+      </div>
+
+      <div className="events-list">
+        <h4>Past Events</h4>
+        {pastEvents.length > 0 ? (
+          <ul>
+            {pastEvents.map((event) => (
+              <li key={event.id}>
+                <Link to={`/events/${event.id}`}>{event.name}</Link> -{" "}
+                {event.date}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No past events</p>
+        )}
+      </div>
     </div>
   );
 }

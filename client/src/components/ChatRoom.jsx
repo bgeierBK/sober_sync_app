@@ -5,6 +5,7 @@ const ChatRoom = ({ event_id, username, user_id }) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState("");
+  const [isRsvped, setIsRsvped] = useState(false);
 
   useEffect(() => {
     if (!event_id) {
@@ -12,7 +13,24 @@ const ChatRoom = ({ event_id, username, user_id }) => {
       return;
     }
 
-    // Fetch existing messages when component mounts
+    // Check if user has RSVP'd
+    const checkRsvpStatus = async () => {
+      try {
+        const response = await fetch(
+          `/api/events/${event_id}/rsvp-status?user_id=${user_id}`
+        );
+        if (!response.ok)
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        const data = await response.json();
+        setIsRsvped(data.is_rsvped);
+      } catch (err) {
+        console.error("Error checking RSVP status:", err);
+      }
+    };
+
+    checkRsvpStatus();
+
+    // Fetch existing messages
     const fetchMessages = async () => {
       try {
         const response = await fetch(`/api/events/${event_id}/chat_messages`);
@@ -28,24 +46,24 @@ const ChatRoom = ({ event_id, username, user_id }) => {
 
     fetchMessages();
 
-    // Join room for this specific event
-    socket.emit("join_room", { username, event_id });
+    // Join room only if RSVP'd
+    if (isRsvped) {
+      socket.emit("join_room", { username, event_id });
 
-    // Listen for messages specific to this event
-    const eventChannel = `receive_message_${event_id}`;
-    socket.on(eventChannel, (newMessage) => {
-      setMessages((prevMessages) => [...prevMessages, newMessage]);
-    });
+      const eventChannel = `receive_message_${event_id}`;
+      socket.on(eventChannel, (newMessage) => {
+        setMessages((prevMessages) => [...prevMessages, newMessage]);
+      });
 
-    // Cleanup on unmount
-    return () => {
-      socket.emit("leave_room", { username, event_id });
-      socket.off(eventChannel);
-    };
-  }, [event_id, username]);
+      return () => {
+        socket.emit("leave_room", { username, event_id });
+        socket.off(eventChannel);
+      };
+    }
+  }, [event_id, username, user_id, isRsvped]);
 
   const sendMessage = () => {
-    if (!message.trim()) return; // Prevent sending empty messages
+    if (!message.trim()) return;
 
     const newMessage = {
       event_id,
@@ -54,42 +72,63 @@ const ChatRoom = ({ event_id, username, user_id }) => {
       user_id,
     };
 
-    // Optimistically update UI
     setMessages((prevMessages) => [
       ...prevMessages,
       { username, message, timestamp: new Date().toISOString() },
     ]);
 
     socket.emit("send_message", newMessage);
-    setMessage(""); // Clear input field
+    setMessage("");
+  };
+
+  const handleRsvp = async () => {
+    try {
+      const response = await fetch(`/api/events/${event_id}/rsvp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id }),
+      });
+
+      if (!response.ok) throw new Error("Failed to RSVP");
+
+      setIsRsvped(true);
+    } catch (err) {
+      console.error("Error RSVPing:", err);
+    }
   };
 
   return (
     <div className="chat-room">
       <h2>Chat Room</h2>
       {error && <p className="error">{error}</p>}
-      <div className="messages">
-        {messages.length > 0 ? (
-          messages.map((msg, index) => (
-            <div key={index}>
-              <strong>{msg.username}</strong>: {msg.message}
-              <br />
-              <small>{new Date(msg.timestamp).toLocaleTimeString()}</small>
-            </div>
-          ))
-        ) : (
-          <p>No messages yet...</p>
-        )}
-      </div>
-      <div className="input-container">
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type your message..."
-        />
-        <button onClick={sendMessage}>Send</button>
-      </div>
+      {!isRsvped ? (
+        <button onClick={handleRsvp}>RSVP to event</button>
+      ) : (
+        <>
+          <div className="messages">
+            {messages.length > 0 ? (
+              messages.map((msg, index) => (
+                <div key={index}>
+                  <strong>{msg.username}</strong>: {msg.message}
+                  <br />
+                  <small>{new Date(msg.timestamp).toLocaleTimeString()}</small>
+                </div>
+              ))
+            ) : (
+              <p>No messages yet...</p>
+            )}
+          </div>
+          <div className="input-container">
+            <input
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Type your message..."
+            />
+            <button onClick={sendMessage}>Send</button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
