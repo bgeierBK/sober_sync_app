@@ -497,6 +497,24 @@ def handle_send_message(data):
 
     return message_data, 201
 
+@app.route('/api/events/<int:event_id>/rsvp-status', methods=['GET'])
+def check_rsvp_status(event_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    user_id = session['user_id']
+    event = Event.query.get(event_id)
+    user = User.query.get(user_id)
+
+    if not event:
+        return jsonify({'error': 'Event not found'}), 404
+    
+    is_rsvped = event in user.events
+
+    return jsonify({
+        'is_rsvped': is_rsvped
+    }), 200
+
 
 
 
