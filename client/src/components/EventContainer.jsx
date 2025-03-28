@@ -6,7 +6,11 @@ function EventContainer({ events, setEvents, currentUser, setCurrentUser }) {
     fetch("/api/events")
       .then((res) => res.json())
       .then((events) => {
-        setEvents(events);
+        // Sort events by date in descending order (most recent first)
+        const sortedEvents = events.sort(
+          (a, b) => new Date(b.date) - new Date(a.date)
+        );
+        setEvents(sortedEvents);
       });
   }, [setEvents]);
 

@@ -5,14 +5,31 @@ import { useOutletContext } from "react-router-dom";
 
 function EventPage() {
   const { id } = useParams();
+  const [eventName, setEventName] = useState(""); // Store event name
   const [loggedIn, setLoggedIn] = useState(false);
   const [friends, setFriends] = useState([]);
   const [otherUsers, setOtherUsers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const { currentUser } = useOutletContext();
 
-  console.log(currentUser);
   useEffect(() => {
+    const fetchEventDetails = async () => {
+      try {
+        const response = await fetch(`/api/events/${id}`, {
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        setEventName(data.name || "Event"); // Set event name
+      } catch (error) {
+        console.error("Error fetching event details:", error);
+      }
+    };
+
     const fetchRsvpedUsers = async () => {
       try {
         const response = await fetch(`/api/events/${id}/rsvped-users`, {
@@ -25,7 +42,6 @@ function EventPage() {
 
         const data = await response.json();
 
-        // If the user is not logged in, set all users under a single list
         if (data.all_users) {
           setAllUsers(data.all_users);
           setLoggedIn(false);
@@ -40,15 +56,15 @@ function EventPage() {
     };
 
     if (id) {
+      fetchEventDetails();
       fetchRsvpedUsers();
     }
   }, [id]);
 
   return (
     <div>
-      <h2>Welcome to the Event Page</h2>
+      <h2>{eventName}</h2> {/* Display event name */}
       <ChatRoom event_id={id} user_id={currentUser?.id || 0} />
-
       <div>
         {loggedIn ? (
           <>
