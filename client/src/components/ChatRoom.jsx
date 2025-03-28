@@ -1,51 +1,42 @@
 import socket from "/Users/ben/Development/code/personal_projects/sober_sync_app/socket.js";
 import { useEffect, useState } from "react";
 
-const ChatRoom = ({ event_id }) => {
+const ChatRoom = ({ event_id, username, user_id }) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState("");
   const [isRsvped, setIsRsvped] = useState(false);
-  const [username, setUsername] = useState("");
 
   useEffect(() => {
-    // Fetch current user info
-    const fetchUserInfo = async () => {
-      try {
-        const response = await fetch("/api/me");
-        if (!response.ok) {
-          throw new Error("Not authenticated");
-        }
-        const userData = await response.json();
-        setUsername(userData.username);
-      } catch (err) {
-        setError("Please log in to access this chat");
-        return;
-      }
+    if (!event_id) {
+      setError("Event ID is missing");
+      return;
+    }
 
-      // Check RSVP status after confirming user is logged in
+    // Check if user has RSVP'd
+    const checkRsvpStatus = async () => {
       try {
-        const rsvpResponse = await fetch(`/api/events/${event_id}/rsvp-status`);
-        if (!rsvpResponse.ok) {
-          throw new Error("Failed to check RSVP status");
-        }
-        const rsvpData = await rsvpResponse.json();
-        setIsRsvped(rsvpData.is_rsvped);
+        const response = await fetch(
+          `/api/events/${event_id}/rsvp-status?user_id=${user_id}`
+        );
+        if (!response.ok)
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        const data = await response.json();
+        setIsRsvped(data.is_rsvped);
       } catch (err) {
         console.error("Error checking RSVP status:", err);
-        setError("Failed to check event RSVP status");
       }
+    };
+
+    checkRsvpStatus();
 
       // Fetch existing messages
       try {
-        const messagesResponse = await fetch(
-          `/api/events/${event_id}/chat_messages`
-        );
-        if (!messagesResponse.ok) {
-          throw new Error("Failed to fetch messages");
-        }
-        const messagesData = await messagesResponse.json();
-        setMessages(messagesData);
+        const response = await fetch(`/api/events/${event_id}/chat_messages`);
+        if (!response.ok)
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        const data = await response.json();
+        setMessages(data);
       } catch (err) {
         console.error("Error fetching messages:", err);
         setError("Failed to load chat messages");
@@ -59,37 +50,54 @@ const ChatRoom = ({ event_id }) => {
   useEffect(() => {
     if (!isRsvped || !username) return;
 
-    // Join room
-    socket.emit("join_room", { username, event_id });
+    // Join room only if RSVP'd
+    if (isRsvped) {
+      socket.emit("join_room", { username, event_id });
 
-    // Listen for messages
-    const eventChannel = `receive_message_${event_id}`;
-    socket.on(eventChannel, (newMessage) => {
-      setMessages((prevMessages) => [...prevMessages, newMessage]);
-    });
+      const eventChannel = `receive_message_${event_id}`;
+      socket.on(eventChannel, (newMessage) => {
+        setMessages((prevMessages) => [...prevMessages, newMessage]);
+      });
 
-    // Cleanup
-    return () => {
-      socket.emit("leave_room", { username, event_id });
-      socket.off(eventChannel);
+      return () => {
+        socket.emit("leave_room", { username, event_id });
+        socket.off(eventChannel);
+      };
+    }
+  }, [event_id, username, user_id, isRsvped]);
+
+  const sendMessage = () => {
+    if (!message.trim()) return;
+
+    const newMessage = {
+      event_id,
+      username,
+      message,
+      user_id,
     };
-  }, [isRsvped, username, event_id]);
+
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { username, message, timestamp: new Date().toISOString() },
+    ]);
+
+    socket.emit("send_message", newMessage);
+    setMessage("");
+  };
 
   const handleRsvp = async () => {
     try {
       const response = await fetch(`/api/events/${event_id}/rsvp`, {
         method: "POST",
-        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id }),
       });
 
-      if (!response.ok) {
-        throw new Error("RSVP failed");
-      }
+      if (!response.ok) throw new Error("Failed to RSVP");
 
       setIsRsvped(true);
     } catch (err) {
       console.error("Error RSVPing:", err);
-      setError("Failed to RSVP to the event");
     }
   };
 
@@ -133,31 +141,36 @@ const ChatRoom = ({ event_id }) => {
 
   return (
     <div className="chat-room">
-      <h2>Event Chat</h2>
-      <div className="messages">
-        {messages.length > 0 ? (
-          messages.map((msg, index) => (
-            <div key={index} className="message">
-              <strong>{msg.username}</strong>: {msg.message}
-              <small>{new Date(msg.timestamp).toLocaleTimeString()}</small>
-            </div>
-          ))
-        ) : (
-          <p>No messages yet...</p>
-        )}
-      </div>
-      <div className="input-container">
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type your message..."
-          disabled={!isRsvped}
-        />
-        <button onClick={sendMessage} disabled={!isRsvped || !message.trim()}>
-          Send
-        </button>
-      </div>
+      <h2>Chat Room</h2>
+      {error && <p className="error">{error}</p>}
+      {!isRsvped ? (
+        <button onClick={handleRsvp}>RSVP to event</button>
+      ) : (
+        <>
+          <div className="messages">
+            {messages.length > 0 ? (
+              messages.map((msg, index) => (
+                <div key={index}>
+                  <strong>{msg.username}</strong>: {msg.message}
+                  <br />
+                  <small>{new Date(msg.timestamp).toLocaleTimeString()}</small>
+                </div>
+              ))
+            ) : (
+              <p>No messages yet...</p>
+            )}
+          </div>
+          <div className="input-container">
+            <input
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Type your message..."
+            />
+            <button onClick={sendMessage}>Send</button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
