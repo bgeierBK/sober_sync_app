@@ -497,6 +497,22 @@ def handle_send_message(data):
 
     return message_data, 201
 
+@app.route('/api/events/<int:event_id>/rsvp-status', methods=['GET'])
+def get_rsvp_status(event_id):
+    # Get the user_id from the query string
+    user_id = request.args.get('user_id', type=int)
+    
+    if not user_id:
+        return jsonify({"error": "User ID is required"}), 400
+    
+    # Query the database to check if the user has RSVP'd for the event
+    rsvp = Rsvp.query.filter_by(event_id=event_id, user_id=user_id).first()
+
+    if rsvp:
+        return jsonify({"is_rsvped": True})
+    else:
+        return jsonify({"is_rsvped": False})
+
 
 
 

@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import socket from "/Users/ben/Development/code/personal_projects/sober_sync_app/socket.js";
 
-const ChatRoom = ({ event_id, username, user_id }) => {
+const ChatRoom = ({ event_id, username, user_id, onRsvpSuccess }) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState("");
   const [isRsvped, setIsRsvped] = useState(false);
 
   useEffect(() => {
-    if (!event_id) {
-      setError("Event ID is missing");
+    if (!event_id || !user_id) {
+      setError("Event ID or User ID is missing");
       return;
     }
 
@@ -25,6 +25,7 @@ const ChatRoom = ({ event_id, username, user_id }) => {
         setIsRsvped(data.is_rsvped);
       } catch (err) {
         console.error("Error checking RSVP status:", err);
+        setError("Failed to check RSVP status.");
       }
     };
 
@@ -82,6 +83,11 @@ const ChatRoom = ({ event_id, username, user_id }) => {
   };
 
   const handleRsvp = async () => {
+    if (!user_id) {
+      setError("You need to log in to RSVP.");
+      return;
+    }
+
     try {
       const response = await fetch(`/api/events/${event_id}/rsvp`, {
         method: "POST",
@@ -92,8 +98,12 @@ const ChatRoom = ({ event_id, username, user_id }) => {
       if (!response.ok) throw new Error("Failed to RSVP");
 
       setIsRsvped(true);
+
+      // Notify parent component about successful RSVP
+      if (onRsvpSuccess) onRsvpSuccess(user_id);
     } catch (err) {
       console.error("Error RSVPing:", err);
+      setError("Failed to RSVP. Please try again later.");
     }
   };
 
