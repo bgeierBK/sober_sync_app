@@ -516,7 +516,64 @@ def check_rsvp_status(event_id):
     }), 200
 
 
+# Add these routes to your Flask app
 
+@app.route("/api/lounge/messages", methods=["GET"])
+def get_lounge_messages():
+    try:
+        # Fetch recent lounge messages (e.g., limit to last 100)
+        messages = ChatMessage.query.filter_by(event_id="lounge").order_by(ChatMessage.timestamp).limit(100).all()
+        
+        # Prepare the response in the desired format
+        result = [
+            {
+                "id": msg.id,
+                "username": msg.username,
+                "message": msg.message,
+                "timestamp": msg.timestamp.isoformat(),
+            }
+            for msg in messages
+        ]
+
+        return jsonify(result), 200
+    except Exception as e:
+        print(f"Error fetching lounge messages: {str(e)}")
+        return jsonify({"error": "Error fetching lounge messages"}), 500
+
+@socketio.on("send_lounge_message")
+def handle_lounge_message(data):
+    """Handles incoming lounge messages and broadcasts them."""
+    user_id = data.get("user_id")
+    
+    if not user_id:
+        return {"error": "User not logged in"}, 401
+
+    user = User.query.get(user_id)
+
+    if not user:
+        return {"error": "Invalid user"}, 404
+
+    # Store the message with "lounge" as event_id
+    new_message = ChatMessage(
+        event_id="lounge",
+        user_id=user_id,
+        username=user.username,
+        message=data["message"]
+    )
+
+    db.session.add(new_message)
+    db.session.commit()
+
+    message_data = {
+        "id": new_message.id,
+        "username": user.username,
+        "message": new_message.message,
+        "timestamp": new_message.timestamp.isoformat()
+    }
+
+    socketio.emit("receive_lounge_message", message_data)
+
+    return message_data, 201
 
 
 

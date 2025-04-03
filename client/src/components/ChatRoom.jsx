@@ -7,6 +7,7 @@ const ChatRoom = ({ event_id }) => {
   const [error, setError] = useState("");
   const [isRsvped, setIsRsvped] = useState(false);
   const [username, setUsername] = useState("");
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     // Fetch current user info
@@ -18,6 +19,7 @@ const ChatRoom = ({ event_id }) => {
         }
         const userData = await response.json();
         setUsername(userData.username);
+        setUserId(userData.id);
       } catch (err) {
         setError("Please log in to access this chat");
         return;
@@ -57,23 +59,19 @@ const ChatRoom = ({ event_id }) => {
 
   // Socket.io connection effect
   useEffect(() => {
-    if (!isRsvped || !username) return;
+    if (!isRsvped || !username || !userId) return;
 
-    // Join room
-    socket.emit("join_room", { username, event_id });
-
-    // Listen for messages
+    // Listen for new messages
     const eventChannel = `receive_message_${event_id}`;
     socket.on(eventChannel, (newMessage) => {
       setMessages((prevMessages) => [...prevMessages, newMessage]);
     });
 
-    // Cleanup
+    // Cleanup when component unmounts
     return () => {
-      socket.emit("leave_room", { username, event_id });
       socket.off(eventChannel);
     };
-  }, [isRsvped, username, event_id]);
+  }, [isRsvped, username, userId, event_id]);
 
   const handleRsvp = async () => {
     try {
@@ -94,26 +92,19 @@ const ChatRoom = ({ event_id }) => {
   };
 
   const sendMessage = () => {
-    if (!message.trim() || !isRsvped) return;
+    if (!message.trim() || !isRsvped || !userId) return;
 
-    const newMessage = {
+    const messageData = {
       event_id,
-      message,
+      user_id: userId,
+      message: message.trim(),
     };
 
-    // Optimistically update UI
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      {
-        username,
-        message,
-        timestamp: new Date().toISOString(),
-      },
-    ]);
+    // Send the message through socket.io
+    socket.emit("send_message", messageData);
 
-    // Emit message via socket
-    socket.emit("send_message", newMessage);
-    setMessage(""); // Clear input
+    // Clear input immediately (the message will appear when the socket returns it)
+    setMessage("");
   };
 
   // Render logic
@@ -137,7 +128,12 @@ const ChatRoom = ({ event_id }) => {
       <div className="messages">
         {messages.length > 0 ? (
           messages.map((msg, index) => (
-            <div key={index} className="message">
+            <div
+              key={msg.id || index}
+              className={`message ${
+                msg.username === username ? "my-message" : "other-message"
+              }`}
+            >
               <strong>{msg.username}</strong>: {msg.message}
               <small>{new Date(msg.timestamp).toLocaleTimeString()}</small>
             </div>
@@ -153,6 +149,7 @@ const ChatRoom = ({ event_id }) => {
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type your message..."
           disabled={!isRsvped}
+          onKeyPress={(e) => e.key === "Enter" && sendMessage()}
         />
         <button onClick={sendMessage} disabled={!isRsvped || !message.trim()}>
           Send
