@@ -57,6 +57,9 @@ function NavBar({ currentUser, setCurrentUser }) {
           <NavLink to="/about" className="navlink">
             About
           </NavLink>
+          <NavLink to="/thelounge" className="navlink">
+            The Lounge
+          </NavLink>
           <button
             className="navlink bg-slate-200 hover:bg-gray-200 text-blue-500 font-semibold py-2 px-4 border border-blue-500 rounded"
             onClick={handleLogOut}

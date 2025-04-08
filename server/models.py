@@ -146,13 +146,31 @@ friend_association = db.Table(
     db.Column('friend_id', db.Integer, db.ForeignKey('users_table.id'), primary_key=True)
 )
 
+class EventPhoto(db.Model, SerializerMixin):
+    __tablename__ = 'event_photos'
+
+    serialize_rules = ('-event',)
+
+    id = db.Column(db.Integer, primary_key=True)
+    url = db.Column(db.String(255), nullable=False)
+    event_id = db.Column(db.Integer, db.ForeignKey('events_table.id'), nullable=False)
+    
+    # Relationship with Event
+    event = db.relationship("Event", back_populates="photos", lazy='joined')
+
+    @validates('url')
+    def validate_url(self, key, value):
+        if not value.strip():
+            raise ValueError('Photo URL cannot be empty')
+        return value
 
 class Event(db.Model, SerializerMixin):
     __tablename__ = 'events_table'
 
     serialize_rules = (
         '-attendees',
-        '-chat_messages'
+        '-chat_messages',
+        '-photos.event'  # Prevents circular references
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -160,7 +178,18 @@ class Event(db.Model, SerializerMixin):
     date = db.Column(db.String(50), nullable=False)
     venue_name = db.Column(db.String(255), nullable=False)
     city = db.Column(db.String(100), nullable=False)
+    photo = db.Column(db.String(255))
+    
 
+    # Photos relationship
+    photos = db.relationship(
+        "EventPhoto",
+        back_populates="event",
+        cascade="all, delete-orphan",
+        lazy='select'
+    )
+    
+    # Chat messages relationship
     chat_messages = db.relationship(
         "ChatMessage", 
         back_populates="event", 
@@ -168,6 +197,7 @@ class Event(db.Model, SerializerMixin):
         lazy='select'
     )
 
+    # Attendees relationship
     attendees = db.relationship(
         "User", 
         secondary=user_event, 
@@ -175,6 +205,7 @@ class Event(db.Model, SerializerMixin):
         lazy='select'
     )
 
+    # Validators
     @validates('name')
     def validate_name(self, key, value):
         if not value.strip():
