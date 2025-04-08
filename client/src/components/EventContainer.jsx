@@ -24,7 +24,7 @@ function EventContainer({ events, setEvents, currentUser, setCurrentUser }) {
         setCurrentUser={setCurrentUser}
       />
     ));
-
+  console.log("event container mounted");
   return (
     <>
       <h2>Upcoming Events</h2>

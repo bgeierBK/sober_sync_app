@@ -74,12 +74,15 @@ def fetch_and_add_events():
             event_date = event.get("date", "Unknown Date")
             venue_name = venue.get("name", "Unknown Location") or "Unknown Location"
 
+            photo_url = event.get("photo")  # This can be None
+
             if (event_name, event_date) not in existing_events:  # Avoid duplicates
                 new_events.append(Event(
                     name=event_name.strip(),
                     date=event_date,
                     venue_name=venue_name.strip(),
-                    city=city.strip()
+                    city=city.strip(),
+                    photo=photo_url  # This will be None if not present
                 ))
 
         except Exception as e:
@@ -87,8 +90,9 @@ def fetch_and_add_events():
             continue
 
     if new_events:
-        db.session.add_all(new_events)  # Add all new events to the session
-        db.session.commit()  # Commit the session to save the new events
+        db.session.add_all(new_events)
+        db.session.commit()
         print(f"{len(new_events)} new events successfully added.")
     else:
         print("No new events to add.")
+

@@ -6,6 +6,8 @@ function Home() {
   const { currentUser, setCurrentUser } = useOutletContext();
   const [events, setEvents] = useState([]);
 
+  console.log("Home page mounted");
+
   return (
     <>
       <EventContainer
