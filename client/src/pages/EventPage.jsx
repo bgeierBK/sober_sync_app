@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import ChatRoom from "../components/ChatRoom";
 import { useOutletContext } from "react-router-dom";
 
@@ -61,6 +61,13 @@ function EventPage() {
     }
   }, [id]);
 
+  // Render user with link to their profile
+  const renderUserWithLink = (user) => (
+    <Link to={`/users/${user.id}`} className="user-profile-link">
+      {user.username}
+    </Link>
+  );
+
   return (
     <div>
       <h2>{eventName}</h2> {/* Display event name */}
@@ -74,7 +81,7 @@ function EventPage() {
             ) : (
               <ul>
                 {friends.map((user, index) => (
-                  <li key={index}>{user.username}</li>
+                  <li key={index}>{renderUserWithLink(user)}</li>
                 ))}
               </ul>
             )}
@@ -85,7 +92,7 @@ function EventPage() {
             ) : (
               <ul>
                 {otherUsers.map((user, index) => (
-                  <li key={index}>{user.username}</li>
+                  <li key={index}>{renderUserWithLink(user)}</li>
                 ))}
               </ul>
             )}
@@ -98,7 +105,7 @@ function EventPage() {
             ) : (
               <ul>
                 {allUsers.map((user, index) => (
-                  <li key={index}>{user.username}</li>
+                  <li key={index}>{renderUserWithLink(user)}</li>
                 ))}
               </ul>
             )}

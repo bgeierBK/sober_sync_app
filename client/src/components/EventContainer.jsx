@@ -6,12 +6,29 @@ function EventContainer({ events, setEvents, currentUser, setCurrentUser }) {
     fetch("/api/events")
       .then((res) => res.json())
       .then((events) => {
-        // Sort events by date in descending order (most recent first)
-        const sortedEvents = events.sort(
-          (a, b) => new Date(b.date) - new Date(a.date)
-        );
-        setEvents(sortedEvents);
-      });
+        const now = new Date();
+        const oneWeekFromNow = new Date();
+        oneWeekFromNow.setDate(now.getDate() + 7);
+
+        const upcomingWeek = [];
+        const future = [];
+
+        events.forEach((event) => {
+          const eventDate = new Date(event.date);
+          if (eventDate >= now && eventDate <= oneWeekFromNow) {
+            upcomingWeek.push(event);
+          } else if (eventDate > oneWeekFromNow) {
+            future.push(event);
+          }
+        });
+
+        // Sort both arrays ascending (soonest first)
+        upcomingWeek.sort((a, b) => new Date(a.date) - new Date(b.date));
+        future.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        setEvents([...upcomingWeek, ...future]);
+      })
+      .catch((err) => console.error("Error fetching events:", err));
   }, [setEvents]);
 
   const mappedEvents = events
@@ -24,7 +41,9 @@ function EventContainer({ events, setEvents, currentUser, setCurrentUser }) {
         setCurrentUser={setCurrentUser}
       />
     ));
+
   console.log("event container mounted");
+
   return (
     <>
       <h2>Upcoming Events</h2>

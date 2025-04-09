@@ -115,7 +115,6 @@ const ChatRoom = ({ event_id }) => {
   if (!isRsvped) {
     return (
       <div className="chat-room">
-        <h2>Event Chat</h2>
         <p>You must RSVP to this event to access the chat.</p>
         <button onClick={handleRsvp}>RSVP to Event</button>
       </div>
@@ -124,7 +123,6 @@ const ChatRoom = ({ event_id }) => {
 
   return (
     <div className="chat-room">
-      <h2>Event Chat</h2>
       <div className="messages">
         {messages.length > 0 ? (
           messages.map((msg, index) => (
