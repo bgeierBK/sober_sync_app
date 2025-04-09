@@ -14,6 +14,8 @@ function UserProfile() {
   const [incomingFriendRequest, setIncomingFriendRequest] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
 
   const fallbackImagePath = "/blank_profile.webp";
   const today = new Date().toISOString().split("T")[0];
@@ -80,18 +82,46 @@ function UserProfile() {
       question2_answer: user.question2_answer || "",
       question3_answer: user.question3_answer || "",
     });
+    setPreviewUrl(user.photo_url || "");
     setIsEditing(true);
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setPhotoFile(file);
+      // Create a preview URL
+      const fileReader = new FileReader();
+      fileReader.onload = () => {
+        setPreviewUrl(fileReader.result);
+      };
+      fileReader.readAsDataURL(file);
+    }
   };
 
   const handleSaveProfile = async () => {
     try {
+      // Create a FormData object to handle file upload
+      const formData = new FormData();
+      formData.append("bio", editedUser.bio);
+      formData.append("question1_answer", editedUser.question1_answer);
+      formData.append("question2_answer", editedUser.question2_answer);
+      formData.append("question3_answer", editedUser.question3_answer);
+
+      // If there's a photo file, append it
+      if (photoFile) {
+        formData.append("profile_photo", photoFile);
+      } else if (editedUser.photo_url) {
+        // If no new file but URL exists, keep the existing URL
+        formData.append("photo_url", editedUser.photo_url);
+      }
+
       const response = await fetch(`/api/users/${user.id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
         credentials: "include",
-        body: JSON.stringify(editedUser),
+        body: formData,
+        // Don't set Content-Type header when sending FormData
+        // The browser will set it automatically with the correct boundary
       });
 
       if (!response.ok) {
@@ -101,6 +131,8 @@ function UserProfile() {
       const updatedData = await response.json();
       setUser(updatedData);
       setIsEditing(false);
+      setPhotoFile(null);
+      setPreviewUrl("");
     } catch (err) {
       console.error("Error saving profile:", err);
     }
@@ -109,6 +141,8 @@ function UserProfile() {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditedUser(null);
+    setPhotoFile(null);
+    setPreviewUrl("");
   };
 
   // Friend request functions (unchanged)
@@ -177,79 +211,123 @@ function UserProfile() {
   return (
     <div className="user-profile">
       <h3>{user.username}</h3>
-      <img
-        src={user.photo_url || fallbackImagePath}
-        alt={`${user.username}'s profile`}
-        className="profile-picture"
-        onError={(e) => {
-          e.target.onerror = null;
-          e.target.src = fallbackImagePath;
-        }}
-      />
 
       {isEditing && editedUser ? (
-        <div className="edit-profile">
-          <label>Bio:</label>
-          <textarea
-            value={editedUser.bio}
-            onChange={(e) =>
-              setEditedUser({ ...editedUser, bio: e.target.value })
-            }
-            maxLength={300}
-          />
-          <label>Photo URL:</label>
-          <input
-            type="text"
-            value={editedUser.photo_url}
-            onChange={(e) =>
-              setEditedUser({ ...editedUser, photo_url: e.target.value })
-            }
-          />
-          <label>Question 1:</label>
-          <textarea
-            value={editedUser.question1_answer}
-            onChange={(e) =>
-              setEditedUser({ ...editedUser, question1_answer: e.target.value })
-            }
-            maxLength={300}
-          />
-          <label>Question 2:</label>
-          <textarea
-            value={editedUser.question2_answer}
-            onChange={(e) =>
-              setEditedUser({ ...editedUser, question2_answer: e.target.value })
-            }
-            maxLength={300}
-          />
-          <label>Question 3:</label>
-          <textarea
-            value={editedUser.question3_answer}
-            onChange={(e) =>
-              setEditedUser({ ...editedUser, question3_answer: e.target.value })
-            }
-            maxLength={300}
-          />
-          <button onClick={handleSaveProfile}>Save Changes</button>
-          <button onClick={handleCancelEdit}>Cancel</button>
-        </div>
+        <>
+          <div className="profile-photo-edit">
+            <img
+              src={previewUrl || fallbackImagePath}
+              alt="Profile preview"
+              className="profile-picture"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = fallbackImagePath;
+              }}
+            />
+            <div className="photo-upload-container">
+              <label htmlFor="profile-photo-upload" className="upload-label">
+                Upload New Photo
+              </label>
+              <input
+                type="file"
+                id="profile-photo-upload"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="file-input"
+              />
+              <p className="upload-hint">
+                Select an image file (JPG, PNG recommended)
+              </p>
+            </div>
+          </div>
+
+          <div className="edit-profile">
+            <label>Bio:</label>
+            <textarea
+              value={editedUser.bio}
+              onChange={(e) =>
+                setEditedUser({ ...editedUser, bio: e.target.value })
+              }
+              maxLength={300}
+            />
+            <label>
+              <strong>What is your dream concert lineup?</strong>
+            </label>
+            <textarea
+              value={editedUser.question1_answer}
+              onChange={(e) =>
+                setEditedUser({
+                  ...editedUser,
+                  question1_answer: e.target.value,
+                })
+              }
+              maxLength={300}
+            />
+            <label>
+              <strong>
+                What is the best concert you've have ever been to?
+              </strong>
+            </label>
+            <textarea
+              value={editedUser.question2_answer}
+              onChange={(e) =>
+                setEditedUser({
+                  ...editedUser,
+                  question2_answer: e.target.value,
+                })
+              }
+              maxLength={300}
+            />
+            <label>
+              <strong>What is your favorite concert venue?</strong>
+            </label>
+            <textarea
+              value={editedUser.question3_answer}
+              onChange={(e) =>
+                setEditedUser({
+                  ...editedUser,
+                  question3_answer: e.target.value,
+                })
+              }
+              maxLength={300}
+            />
+            <button onClick={handleSaveProfile}>Save Changes</button>
+            <button onClick={handleCancelEdit}>Cancel</button>
+          </div>
+        </>
       ) : (
         <>
+          <img
+            src={user.photo_url || fallbackImagePath}
+            alt={`${user.username}'s profile`}
+            className="profile-picture"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = fallbackImagePath;
+            }}
+          />
+
           <p>
             <strong>Bio:</strong> {user.bio || "No bio available"}
           </p>
           {user.question1_answer && (
             <p>
-              <strong>Q1:</strong> {user.question1_answer}
+              <strong>What is your dream concert lineup?</strong>{" "}
+              {user.question1_answer}
             </p>
           )}
           {user.question2_answer && (
             <p>
-              <strong>Q2:</strong> {user.question2_answer}
+              <strong>
+                What is the best concert you've have ever been to?
+              </strong>{" "}
+              {user.question2_answer}
             </p>
           )}
           {user.question3_answer && (
             <p>
-              <strong>Q3:</strong> {user.question3_answer}
+              <strong>What is your favorite concert venue?</strong>{" "}
+              {user.question3_answer}
             </p>
           )}
           {loggedInUser && loggedInUser.id === user.id && (
