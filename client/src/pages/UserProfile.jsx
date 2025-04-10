@@ -16,6 +16,7 @@ function UserProfile() {
   const [editedUser, setEditedUser] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   const fallbackImagePath = "/blank_profile.webp";
   const today = new Date().toISOString().split("T")[0];
@@ -81,6 +82,9 @@ function UserProfile() {
       question1_answer: user.question1_answer || "",
       question2_answer: user.question2_answer || "",
       question3_answer: user.question3_answer || "",
+      gender: user.gender || "",
+      orientation: user.orientation || "",
+      soberstatus: user.soberstatus || "",
     });
     setPreviewUrl(user.photo_url || "");
     setIsEditing(true);
@@ -99,42 +103,110 @@ function UserProfile() {
     }
   };
 
+  // Upload photo separately if needed
+  const uploadPhoto = async () => {
+    if (!photoFile) return null;
+
+    setPhotoUploading(true);
+    try {
+      // Create FormData for just the photo
+      const photoData = new FormData();
+      photoData.append("profile_photo", photoFile);
+
+      // Check if your API has a separate endpoint for photo uploads
+      // If not, you might need to implement this on the backend
+      const uploadResponse = await fetch(`/api/users/${user.id}/upload-photo`, {
+        method: "POST",
+        credentials: "include",
+        body: photoData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload photo");
+      }
+
+      const uploadResult = await uploadResponse.json();
+      setPhotoUploading(false);
+      return uploadResult.photo_url; // Assuming the API returns the URL
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+      setPhotoUploading(false);
+      throw error;
+    }
+  };
+
   const handleSaveProfile = async () => {
     try {
-      // Create a FormData object to handle file upload
-      const formData = new FormData();
-      formData.append("bio", editedUser.bio);
-      formData.append("question1_answer", editedUser.question1_answer);
-      formData.append("question2_answer", editedUser.question2_answer);
-      formData.append("question3_answer", editedUser.question3_answer);
+      let photoUrl = editedUser.photo_url;
 
-      // If there's a photo file, append it
+      // Only attempt photo upload if we have a new file
       if (photoFile) {
-        formData.append("profile_photo", photoFile);
-      } else if (editedUser.photo_url) {
-        // If no new file but URL exists, keep the existing URL
-        formData.append("photo_url", editedUser.photo_url);
+        try {
+          // If your API has a separate photo upload endpoint
+          const newPhotoUrl = await uploadPhoto();
+          if (newPhotoUrl) {
+            photoUrl = newPhotoUrl;
+          }
+        } catch (photoError) {
+          console.error("Photo upload failed, proceeding with profile update");
+          // Continue with profile update even if photo upload fails
+        }
       }
+
+      // Create the JSON payload
+      const profileData = {
+        bio: editedUser.bio || "",
+        photo_url: photoUrl || "",
+        question1_answer: editedUser.question1_answer || "",
+        question2_answer: editedUser.question2_answer || "",
+        question3_answer: editedUser.question3_answer || "",
+        gender: editedUser.gender || "",
+        orientation: editedUser.orientation || "",
+        soberstatus: editedUser.soberstatus || "",
+      };
+
+      console.log("Sending profile update as JSON:", profileData);
 
       const response = await fetch(`/api/users/${user.id}`, {
         method: "PATCH",
         credentials: "include",
-        body: formData,
-        // Don't set Content-Type header when sending FormData
-        // The browser will set it automatically with the correct boundary
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(profileData),
       });
 
+      // Better error handling - check the response type
+      const contentType = response.headers.get("content-type");
       if (!response.ok) {
-        throw new Error("Failed to save profile");
+        // If the response is HTML, we'll get the text for debugging
+        if (contentType && contentType.indexOf("text/html") !== -1) {
+          const htmlError = await response.text();
+          console.error("Server returned HTML error:", htmlError);
+          throw new Error("Server error - received HTML instead of JSON");
+        } else {
+          // Try to get JSON error if available
+          try {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to save profile");
+          } catch (jsonError) {
+            throw new Error(
+              `Server error (${response.status}): ${response.statusText}`
+            );
+          }
+        }
       }
 
+      // If we got here, the response is OK
       const updatedData = await response.json();
+      console.log("Profile updated successfully:", updatedData);
       setUser(updatedData);
       setIsEditing(false);
       setPhotoFile(null);
       setPreviewUrl("");
     } catch (err) {
       console.error("Error saving profile:", err);
+      alert("Failed to save profile: " + err.message);
     }
   };
 
@@ -145,7 +217,7 @@ function UserProfile() {
     setPreviewUrl("");
   };
 
-  // Friend request functions (unchanged)
+  // Friend request functions
   const handleAddFriend = async () => {
     try {
       const response = await fetch("/api/friend-request", {
@@ -201,6 +273,33 @@ function UserProfile() {
     }
   };
 
+  // Helper function to get display text for field values
+  const getDisplayText = (field, value) => {
+    if (!value) return "";
+
+    const fieldOptions = {
+      gender: {
+        male: "Male",
+        female: "Female",
+        "non-binary": "Non-Binary",
+      },
+      orientation: {
+        straight: "Straight",
+        gay: "Gay",
+        bi: "Bisexual",
+        pan: "Pansexual",
+        "aro/ace": "Asexual/Aromantic",
+      },
+      soberstatus: {
+        abstinent: "Abstinent",
+        "sober-curious": "Sober-Curious",
+        "california-sober": "California Sober",
+      },
+    };
+
+    return fieldOptions[field][value.toLowerCase()] || value;
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!user) return <div>User not found</div>;
@@ -250,6 +349,51 @@ function UserProfile() {
               }
               maxLength={300}
             />
+
+            {/* Dropdown for gender */}
+            <label>Gender:</label>
+            <select
+              value={editedUser.gender}
+              onChange={(e) =>
+                setEditedUser({ ...editedUser, gender: e.target.value })
+              }
+            >
+              <option value="">Select Gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="non-binary">Non-Binary</option>
+            </select>
+
+            {/* Dropdown for orientation */}
+            <label>Orientation:</label>
+            <select
+              value={editedUser.orientation}
+              onChange={(e) =>
+                setEditedUser({ ...editedUser, orientation: e.target.value })
+              }
+            >
+              <option value="">Select Orientation</option>
+              <option value="straight">Straight</option>
+              <option value="gay">Gay</option>
+              <option value="bi">Bisexual</option>
+              <option value="pan">Pansexual</option>
+              <option value="aro/ace">Asexual/Aromantic</option>
+            </select>
+
+            {/* Dropdown for sober status */}
+            <label>Sober Status:</label>
+            <select
+              value={editedUser.soberstatus}
+              onChange={(e) =>
+                setEditedUser({ ...editedUser, soberstatus: e.target.value })
+              }
+            >
+              <option value="">Select Sober Status</option>
+              <option value="abstinent">Abstinent</option>
+              <option value="sober-curious">Sober-Curious</option>
+              <option value="california-sober">California Sober</option>
+            </select>
+
             <label>
               <strong>What is your dream concert lineup?</strong>
             </label>
@@ -291,8 +435,24 @@ function UserProfile() {
               }
               maxLength={300}
             />
-            <button onClick={handleSaveProfile}>Save Changes</button>
-            <button onClick={handleCancelEdit}>Cancel</button>
+            <div className="button-group">
+              <button
+                type="button"
+                onClick={handleSaveProfile}
+                className="save-button"
+                disabled={photoUploading}
+              >
+                {photoUploading ? "Uploading..." : "Save Changes"}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="cancel-button"
+                disabled={photoUploading}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </>
       ) : (
@@ -310,6 +470,30 @@ function UserProfile() {
           <p>
             <strong>Bio:</strong> {user.bio || "No bio available"}
           </p>
+
+          {/* Display gender, orientation, and sober status if available */}
+          <div className="user-details">
+            {user.gender && (
+              <p>
+                <strong>Gender:</strong> {getDisplayText("gender", user.gender)}
+              </p>
+            )}
+
+            {user.orientation && (
+              <p>
+                <strong>Orientation:</strong>{" "}
+                {getDisplayText("orientation", user.orientation)}
+              </p>
+            )}
+
+            {user.soberstatus && (
+              <p>
+                <strong>Sober Status:</strong>{" "}
+                {getDisplayText("soberstatus", user.soberstatus)}
+              </p>
+            )}
+          </div>
+
           {user.question1_answer && (
             <p>
               <strong>What is your dream concert lineup?</strong>{" "}
