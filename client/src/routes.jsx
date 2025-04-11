@@ -6,6 +6,7 @@ import SignUpPage from "./pages/SignUpPage";
 import UserProfile from "./pages/UserProfile";
 import Home from "./pages/Home";
 import TheLounge from "./pages/TheLounge";
+import About from "./pages/About";
 
 const routes = [
   {
@@ -39,6 +40,11 @@ const routes = [
       {
         path: "/thelounge",
         element: <TheLounge />,
+        errorElement: <Error />,
+      },
+      {
+        path: "/about",
+        element: <About />,
         errorElement: <Error />,
       },
     ],
