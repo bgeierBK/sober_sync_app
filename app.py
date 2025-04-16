@@ -577,7 +577,101 @@ def handle_lounge_message(data):
 
 
 
+#photo routes
 
+# Event photo routes
+@app.post('/api/events/<int:event_id>/photos')
+def upload_event_photo(event_id):
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image file found'}), 400
+
+    image_file = request.files['image']
+    if image_file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    # Check if the event exists
+    event = Event.query.get(event_id)
+    if not event:
+        return jsonify({'error': 'Event not found'}), 404
+
+    # Upload the image to Cloudinary and get the URL
+    image_url = upload_image(image_file)
+    if not image_url:
+        return jsonify({'error': 'Failed to upload image'}), 500
+
+    # Create new event photo
+    new_photo = EventPhoto(
+        url=image_url,
+        event_id=event_id
+    )
+    
+    db.session.add(new_photo)
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Photo uploaded successfully',
+        'photo': new_photo.to_dict()
+    }), 201
+
+
+@app.get('/api/events/<int:event_id>/photos')
+def get_event_photos(event_id):
+    # Check if the event exists
+    event = Event.query.get(event_id)
+    if not event:
+        return jsonify({'error': 'Event not found'}), 404
+    
+    # Get all photos for the event
+    photos = EventPhoto.query.filter_by(event_id=event_id).all()
+    
+    return jsonify([photo.to_dict() for photo in photos]), 200
+
+
+@app.delete('/api/events/photos/<int:photo_id>')
+def delete_event_photo(photo_id):
+    # Check if user is logged in (optional - if you want to restrict deletion)
+    # if 'user_id' not in session:
+    #     return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Find the photo
+    photo = EventPhoto.query.get(photo_id)
+    if not photo:
+        return jsonify({'error': 'Photo not found'}), 404
+    
+    # Delete from database
+    db.session.delete(photo)
+    db.session.commit()
+    
+    # Optional: Delete from Cloudinary as well
+    # This would require extracting the public_id from the URL
+    # cloudinary.uploader.destroy(public_id)
+    
+    return jsonify({'message': 'Photo deleted successfully'}), 200
+
+
+@app.patch('/api/events/photos/<int:photo_id>')
+def update_event_photo(photo_id):
+    # Find the photo
+    photo = EventPhoto.query.get(photo_id)
+    if not photo:
+        return jsonify({'error': 'Photo not found'}), 404
+    
+    # Update only the fields that are provided
+    if 'url' in request.json:
+        photo.url = request.json['url']
+    if 'event_id' in request.json:
+        # Check if the new event exists
+        event = Event.query.get(request.json['event_id'])
+        if not event:
+            return jsonify({'error': 'Event not found'}), 404
+        photo.event_id = request.json['event_id']
+    
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Photo updated successfully',
+        'photo': photo.to_dict()
+    }), 200
 
 
 # Run the app
