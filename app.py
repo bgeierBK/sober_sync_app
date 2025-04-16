@@ -5,7 +5,7 @@ from flask_socketio import SocketIO
 from flask_migrate import Migrate
 from server import create_app
 from server.api_utils import fetch_and_add_events
-from server.models import User, Event, ChatMessage, FriendRequest
+from server.models import User, Event, ChatMessage, FriendRequest, EventPhoto
 from server.extensions import db, bcrypt
 from flask_cors import CORS
 import cloudinary.uploader
