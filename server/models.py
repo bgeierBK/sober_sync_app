@@ -20,6 +20,8 @@ class User(db.Model, SerializerMixin):
         '-received_requests',
         '-friends',
         '-related_friends',
+        '-sent_messages',
+        '-received_messages',
         'events'  
     )
 
@@ -257,3 +259,19 @@ class ChatMessage(db.Model, SerializerMixin):
         back_populates="messages", 
         lazy='joined'
     )
+
+class DirectMessage(db.Model, SerializerMixin):
+        __tablename__ = 'direct_messages'
+
+        serialize_rules = ('-sender', '-receiver')
+
+        id = db.Column(db.Integer, primary_key=True)
+        sender_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
+        receiver_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
+        message = db.Column(db.Text, nullable=False)
+        timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+        is_read = db.Column(db.Boolean, default=False)
+
+        #    Relationships
+        sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages', lazy='joined')
+        receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages', lazy='joined')

@@ -5,7 +5,7 @@ from flask_socketio import SocketIO
 from flask_migrate import Migrate
 from server import create_app
 from server.api_utils import fetch_and_add_events
-from server.models import User, Event, ChatMessage, FriendRequest, EventPhoto
+from server.models import User, Event, ChatMessage, FriendRequest, EventPhoto, DirectMessage
 from server.extensions import db, bcrypt
 from flask_cors import CORS
 import cloudinary.uploader
@@ -673,6 +673,217 @@ def update_event_photo(photo_id):
         'photo': photo.to_dict()
     }), 200
 
+#direct message routes
+
+@app.route('/api/direct-messages/<int:user_id>', methods=['GET'])
+def get_direct_messages(user_id):
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    current_user_id = session['user_id']
+    
+    # Get conversation between current user and specified user
+    messages = DirectMessage.query.filter(
+        ((DirectMessage.sender_id == current_user_id) & (DirectMessage.receiver_id == user_id)) |
+        ((DirectMessage.sender_id == user_id) & (DirectMessage.receiver_id == current_user_id))
+    ).order_by(DirectMessage.timestamp).all()
+    
+    return jsonify([message.to_dict() for message in messages]), 200
+
+@app.route('/api/direct-messages/conversations', methods=['GET'])
+def get_conversations():
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    current_user_id = session['user_id']
+    
+    # Find all users the current user has exchanged messages with
+    sent_to = db.session.query(DirectMessage.receiver_id).filter_by(sender_id=current_user_id).distinct().all()
+    received_from = db.session.query(DirectMessage.sender_id).filter_by(receiver_id=current_user_id).distinct().all()
+    
+    # Combine and remove duplicates
+    conversation_user_ids = set([user_id for (user_id,) in sent_to] + [user_id for (user_id,) in received_from])
+    
+    # Get user details
+    conversations = []
+    for user_id in conversation_user_ids:
+        user = User.query.get(user_id)
+        if user:
+            # Get the latest message for preview
+            latest_message = DirectMessage.query.filter(
+                ((DirectMessage.sender_id == current_user_id) & (DirectMessage.receiver_id == user_id)) |
+                ((DirectMessage.sender_id == user_id) & (DirectMessage.receiver_id == current_user_id))
+            ).order_by(DirectMessage.timestamp.desc()).first()
+            
+            # Count unread messages
+            unread_count = DirectMessage.query.filter_by(
+                sender_id=user_id, 
+                receiver_id=current_user_id, 
+                is_read=False
+            ).count()
+            
+            conversations.append({
+                "user_id": user.id,
+                "username": user.username,
+                "photo_url": user.photo_url,
+                "latest_message": latest_message.message if latest_message else "",
+                "latest_timestamp": latest_message.timestamp.isoformat() if latest_message else None,
+                "unread_count": unread_count
+            })
+    
+    # Sort by latest message
+    conversations.sort(key=lambda x: x["latest_timestamp"] or "", reverse=True)
+    
+    return jsonify(conversations), 200
+
+@app.route('/api/direct-messages/mark-read/<int:user_id>', methods=['POST'])
+def mark_messages_read(user_id):
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    current_user_id = session['user_id']
+    
+    # Mark all messages from specified user to current user as read
+    unread_messages = DirectMessage.query.filter_by(
+        sender_id=user_id, 
+        receiver_id=current_user_id, 
+        is_read=False
+    ).all()
+    
+    for message in unread_messages:
+        message.is_read = True
+    
+    db.session.commit()
+    
+    return jsonify({"message": "Messages marked as read"}), 200
+
+#socket io for DMS
+
+@socketio.on("send_direct_message")
+def handle_direct_message(data):
+    """Handles direct messages between users."""
+    sender_id = data.get("sender_id")
+    receiver_id = data.get("receiver_id")
+    message_text = data.get("message")
+    
+    if not sender_id or not receiver_id:
+        return {"error": "Missing user information"}, 400
+    
+    sender = User.query.get(sender_id)
+    receiver = User.query.get(receiver_id)
+    
+    if not sender or not receiver:
+        return {"error": "Invalid user"}, 404
+    
+    # Store the message
+    new_message = DirectMessage(
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        message=message_text
+    )
+    
+    db.session.add(new_message)
+    db.session.commit()
+    
+    message_data = {
+        "id": new_message.id,
+        "sender_id": sender_id,
+        "sender_username": sender.username,
+        "receiver_id": receiver_id,
+        "message": message_text,
+        "timestamp": new_message.timestamp.isoformat(),
+        "is_read": False
+    }
+    
+    # Emit to both sender and receiver channels
+    socketio.emit(f"receive_direct_message_{sender_id}_{receiver_id}", message_data)
+    socketio.emit(f"receive_direct_message_{receiver_id}_{sender_id}", message_data)
+    
+    # Also emit to a general notification channel for the receiver
+    socketio.emit(f"message_notification_{receiver_id}", {
+        "from_id": sender_id,
+        "from_username": sender.username,
+        "preview": message_text[:30] + ("..." if len(message_text) > 30 else "")
+    })
+    
+    return message_data, 201
+
+@socketio.on("join_dm_room")
+def join_dm_room(data):
+    """Joins a user to their direct message room."""
+    user_id = data.get("user_id")
+    
+    if not user_id:
+        return {"error": "User ID required"}, 400
+    
+    # Join a room for this user to receive notifications
+    socketio.join_room(f"user_{user_id}")
+    return {"message": "Joined DM room"}, 200
+
+# unread messages
+
+@app.route('/api/direct-messages/unread-count', methods=['GET'])
+def get_unread_count():
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    current_user_id = session['user_id']
+    
+    unread_count = DirectMessage.query.filter_by(
+        receiver_id=current_user_id, 
+        is_read=False
+    ).count()
+    
+    return jsonify({"unread_count": unread_count}), 200
+
+# recent messages
+
+@app.route('/api/direct-messages/recent', methods=['GET'])
+def get_recent_messages():
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    current_user_id = session['user_id']
+    
+    # Use a subquery to get the most recent message for each conversation
+    subq = db.session.query(
+        DirectMessage.id,
+        db.func.max(DirectMessage.timestamp).label('max_timestamp'),
+        db.case(
+            [(DirectMessage.sender_id == current_user_id, DirectMessage.receiver_id)],
+            else_=DirectMessage.sender_id
+        ).label('other_user_id')
+    ).filter(
+        (DirectMessage.sender_id == current_user_id) | 
+        (DirectMessage.receiver_id == current_user_id)
+    ).group_by('other_user_id').subquery()
+    
+    recent_messages = db.session.query(
+        DirectMessage, 
+        User
+    ).join(
+        subq, 
+        DirectMessage.id == subq.c.id
+    ).join(
+        User, 
+        User.id == subq.c.other_user_id
+    ).all()
+    
+    result = []
+    for message, user in recent_messages:
+        result.append({
+            "user_id": user.id,
+            "username": user.username,
+            "photo_url": user.photo_url,
+            "last_message": message.message,
+            "timestamp": message.timestamp.isoformat(),
+            "unread": message.receiver_id == current_user_id and not message.is_read
+        })
+    
+    # Sort by timestamp (newest first)
+    result.sort(key=lambda x: x["timestamp"], reverse=True)
+    
+    return jsonify(result), 200
 
 # Run the app
 if __name__ == '__main__':
