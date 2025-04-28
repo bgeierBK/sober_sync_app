@@ -43,3 +43,5 @@ function ConversationsList({
     </div>
   );
 }
+
+export default ConversationsList;

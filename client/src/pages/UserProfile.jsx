@@ -309,7 +309,32 @@ function UserProfile() {
 
   return (
     <div className="user-profile">
-      <h3>{user.username}</h3>
+      {/* Profile Header with Username */}
+      <div className="profile-header">
+        <h3>{user.username}</h3>
+
+        {/* Messaging section with conditional rendering based on user context */}
+        {loggedInUser && (
+          <div className="messages-section">
+            {/* Show "My Messages" when viewing own profile */}
+            {loggedInUser.id === user.id && (
+              <Link to={`/messages/${userId}`} className="message-button">
+                My Messages
+              </Link>
+            )}
+
+            {/* Show "Message User" button when viewing someone else's profile */}
+            {loggedInUser.id !== user.id && (
+              <Link
+                to={`/messages/${loggedInUser.id}/conversation/${userId}`}
+                className="message-button"
+              >
+                Message {user.username}
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
 
       {isEditing && editedUser ? (
         <>

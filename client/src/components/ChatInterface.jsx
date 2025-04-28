@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+
 function ChatInterface({ messages, currentUser, selectedUser, onMessageSent }) {
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef(null);
@@ -75,3 +77,5 @@ function ChatInterface({ messages, currentUser, selectedUser, onMessageSent }) {
     </div>
   );
 }
+
+export default ChatInterface;
