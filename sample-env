@@ -1,0 +1,4 @@
+SECRET_KEY=abcdefghijklmnop
+SQLALCHEMY_DATABASE_URI=sqlite:///app.db
+SQLALCHEMY_TRACK_MODIFICATIONS=False
+UPLOAD_FOLDER=/home/chett/sobersync/sober_sync_app/uploads
