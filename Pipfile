@@ -14,11 +14,11 @@ importlib-metadata = "6.0.0"
 importlib-resources = "5.10.0"
 flask-cors = "*"
 flask-bcrypt = "*"
-python-dotenv = "*"
 psycopg2-binary = "*"
 gunicorn = "*"
 requests = "*"
 cloudinary = "*"
+python-dotenv = "*"
 
 [dev-packages]
 
