@@ -9,3 +9,7 @@ frontend/dist/
 
 # System files
 .DS_Store
+
+.env
+
+.venv
