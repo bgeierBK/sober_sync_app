@@ -26,6 +26,9 @@ function NavBar({ currentUser, setCurrentUser }) {
       });
   }
 
+  // Debug currentUser object - you can remove this after fixing the issue
+  console.log("Current user in navbar:", currentUser);
+
   return (
     <nav className="bg-blue-500 text-slate-200">
       {currentUser == null ? (
@@ -43,7 +46,7 @@ function NavBar({ currentUser, setCurrentUser }) {
             to="/login"
             className="navlink bg-slate-200 hover:bg-gray-200 text-blue-500 font-semibold py-2 px-4 border border-blue-500 rounded"
           >
-            Login``
+            Login
           </NavLink>
         </div>
       ) : (
@@ -51,7 +54,14 @@ function NavBar({ currentUser, setCurrentUser }) {
           <NavLink to="/" className="navlink">
             Home
           </NavLink>
-          <NavLink to={`/users/${currentUser.id}`} className="navlink">
+          <NavLink
+            to={
+              currentUser && currentUser.id
+                ? `/users/${currentUser.id}`
+                : "/profile"
+            }
+            className="navlink"
+          >
             My Profile
           </NavLink>
           <NavLink to="/about" className="navlink">

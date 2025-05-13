@@ -885,6 +885,38 @@ def get_recent_messages():
     
     return jsonify(result), 200
 
+@app.route('/api/direct-messages', methods=['POST'])
+def create_direct_message():
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json
+    sender_id = session['user_id']
+    receiver_id = data.get('receiver_id')
+    message_text = data.get('message')
+
+    if not receiver_id or not message_text:
+        return jsonify({"error": "Missing receiver_id or message text"}), 400
+
+    # Verify sender and receiver exist
+    sender = User.query.get(sender_id)
+    receiver = User.query.get(receiver_id)
+
+    if not sender or not receiver:
+        return jsonify({"error": "Invalid sender or receiver"}), 404
+
+    # Create the new direct message
+    new_message = DirectMessage(
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        message=message_text
+    )
+
+    db.session.add(new_message)
+    db.session.commit()
+
+    return jsonify(new_message.to_dict()), 201
+
 # Run the app
 if __name__ == '__main__':
     socketio.run(app, port=5550, debug=True)

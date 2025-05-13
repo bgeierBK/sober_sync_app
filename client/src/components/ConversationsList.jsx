@@ -1,3 +1,5 @@
+import React from "react";
+
 function ConversationsList({
   conversations,
   selectConversation,
@@ -17,25 +19,8 @@ function ConversationsList({
             }`}
             onClick={() => selectConversation(conversation.user_id)}
           >
-            <div className="user-avatar">
-              {conversation.photo_url ? (
-                <img src={conversation.photo_url} alt={conversation.username} />
-              ) : (
-                <div className="default-avatar">{conversation.username[0]}</div>
-              )}
-              {conversation.unread_count > 0 && (
-                <span className="unread-badge">
-                  {conversation.unread_count}
-                </span>
-              )}
-            </div>
             <div className="conversation-preview">
               <div className="username">{conversation.username}</div>
-              <div className="last-message">{conversation.latest_message}</div>
-            </div>
-            <div className="timestamp">
-              {conversation.latest_timestamp &&
-                formatTimeAgo(conversation.latest_timestamp)}
             </div>
           </div>
         ))

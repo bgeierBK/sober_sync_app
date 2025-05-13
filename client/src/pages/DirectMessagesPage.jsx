@@ -1,71 +1,28 @@
-import { useState, useEffect } from "react";
-import ConversationsList from "../components/ConversationsList";
-import ChatInterface from "../components/ChatInterface";
+import React from "react";
 
-function DirectMessagesPage() {
-  const [conversations, setConversations] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
+function DirectMessagesPage({ conversations, selectedUserId }) {
+  // Find the selected conversation
+  const selectedConversation = conversations?.find(
+    (conv) => conv.id === selectedUserId
+  );
 
-  useEffect(() => {
-    // Fetch the current user
-    fetch("/api/check_session")
-      .then((res) => res.json())
-      .then((data) => setCurrentUser(data));
-
-    // Fetch conversations
-    fetchConversations();
-  }, []);
-
-  const fetchConversations = () => {
-    fetch("/api/direct-messages/conversations")
-      .then((res) => res.json())
-      .then((data) => setConversations(data));
-  };
-
-  const selectConversation = (userId) => {
-    setSelectedUser(userId);
-
-    // Mark messages as read
-    fetch(`/api/direct-messages/mark-read/${userId}`, {
-      method: "POST",
-    });
-
-    // Fetch messages for this conversation
-    fetch(`/api/direct-messages/${userId}`)
-      .then((res) => res.json())
-      .then((data) => setMessages(data));
-  };
+  if (!selectedConversation) {
+    // Handle case where no conversation is found or selected
+    return <div>Please select a conversation to view messages</div>;
+  }
 
   return (
-    <div className="dm-container">
-      <ConversationsList
-        conversations={conversations}
-        selectConversation={selectConversation}
-        selectedUserId={selectedUser}
-      />
-
-      {selectedUser ? (
-        <ChatInterface
-          messages={messages}
-          currentUser={currentUser}
-          selectedUser={selectedUser}
-          onMessageSent={() => {
-            // Refresh messages
-            fetch(`/api/direct-messages/${selectedUser}`)
-              .then((res) => res.json())
-              .then((data) => setMessages(data));
-
-            // Also refresh conversations to update last message
-            fetchConversations();
-          }}
-        />
-      ) : (
-        <div className="empty-state">
-          Select a conversation to start messaging
-        </div>
-      )}
+    <div>
+      <h2>Conversation with {selectedConversation.username}</h2>
+      {/* Render conversation messages */}
+      <div className="messages-list">
+        {selectedConversation.messages.map((message) => (
+          <div key={message.id} className="message-item">
+            <span className="message-sender">{message.sender}: </span>
+            <span className="message-text">{message.text}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
