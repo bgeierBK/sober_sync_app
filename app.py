@@ -694,46 +694,60 @@ def get_direct_messages(user_id):
 def get_conversations():
     if 'user_id' not in session:
         return jsonify({"error": "Unauthorized"}), 401
-    
+
     current_user_id = session['user_id']
-    
+
     # Find all users the current user has exchanged messages with
     sent_to = db.session.query(DirectMessage.receiver_id).filter_by(sender_id=current_user_id).distinct().all()
     received_from = db.session.query(DirectMessage.sender_id).filter_by(receiver_id=current_user_id).distinct().all()
-    
+
     # Combine and remove duplicates
     conversation_user_ids = set([user_id for (user_id,) in sent_to] + [user_id for (user_id,) in received_from])
-    
-    # Get user details
+
+    # Optimize queries with subqueries
+    latest_message_subquery = db.session.query(
+        DirectMessage.receiver_id.label('other_user_id'),
+        db.func.max(DirectMessage.timestamp).label('latest_timestamp')
+    ).filter(
+        (DirectMessage.sender_id == current_user_id) | (DirectMessage.receiver_id == current_user_id)
+    ).group_by('other_user_id').subquery()
+
     conversations = []
     for user_id in conversation_user_ids:
         user = User.query.get(user_id)
         if user:
-            # Get the latest message for preview
+            # Fetch the latest message for preview
             latest_message = DirectMessage.query.filter(
                 ((DirectMessage.sender_id == current_user_id) & (DirectMessage.receiver_id == user_id)) |
                 ((DirectMessage.sender_id == user_id) & (DirectMessage.receiver_id == current_user_id))
             ).order_by(DirectMessage.timestamp.desc()).first()
-            
+
+            # Fetch all messages between current user and this user
+            messages = DirectMessage.query.filter(
+                ((DirectMessage.sender_id == current_user_id) & (DirectMessage.receiver_id == user_id)) |
+                ((DirectMessage.sender_id == user_id) & (DirectMessage.receiver_id == current_user_id))
+            ).order_by(DirectMessage.timestamp).all()
+
             # Count unread messages
             unread_count = DirectMessage.query.filter_by(
-                sender_id=user_id, 
-                receiver_id=current_user_id, 
+                sender_id=user_id,
+                receiver_id=current_user_id,
                 is_read=False
             ).count()
-            
+
             conversations.append({
-                "user_id": user.id,
+                "id": user.id,  # Using "id" for consistency with the frontend
                 "username": user.username,
                 "photo_url": user.photo_url,
                 "latest_message": latest_message.message if latest_message else "",
                 "latest_timestamp": latest_message.timestamp.isoformat() if latest_message else None,
-                "unread_count": unread_count
+                "unread_count": unread_count,
+                "messages": [message.to_dict() for message in messages]  # Include full messages
             })
-    
-    # Sort by latest message
+
+    # Sort by latest message timestamp
     conversations.sort(key=lambda x: x["latest_timestamp"] or "", reverse=True)
-    
+
     return jsonify(conversations), 200
 
 @app.route('/api/direct-messages/mark-read/<int:user_id>', methods=['POST'])

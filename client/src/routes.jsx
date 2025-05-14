@@ -8,7 +8,6 @@ import Home from "./pages/Home";
 import TheLounge from "./pages/TheLounge";
 import About from "./pages/About";
 import DirectMessagesPage from "./pages/DirectMessagesPage";
-import ConversationPage from "./pages/ConversationPage";
 
 const routes = [
   {
@@ -53,13 +52,6 @@ const routes = [
         path: "/messages/:id",
         element: <DirectMessagesPage />,
         errorElement: <Error />,
-        children: [
-          {
-            path: "conversation/:conversationId",
-            element: <ConversationPage />,
-            errorElement: <Error />,
-          },
-        ],
       },
     ],
   },
