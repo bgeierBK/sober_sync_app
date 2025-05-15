@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Modal from "react-modal"; // Import react-modal
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useLocation } from "react-router-dom"; // Add useLocation for navigation state
 
 // Set the app element for accessibility
 Modal.setAppElement("#root");
@@ -232,6 +232,7 @@ function ConversationModal({
 
 function DirectMessagesPage() {
   const { currentUser } = useOutletContext();
+  const location = useLocation(); // Use location to read navigation state
 
   const [conversations, setConversations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -260,6 +261,18 @@ function DirectMessagesPage() {
 
         const data = await response.json();
         setConversations(data || []);
+
+        // Automatically open a specific conversation if passed in state
+        const openConversationWith = location.state?.openConversationWith;
+        if (openConversationWith) {
+          const conversation = data.find(
+            (conv) => conv.id === openConversationWith
+          );
+          if (conversation) {
+            setSelectedConversation(conversation);
+            setIsModalOpen(true);
+          }
+        }
       } catch (error) {
         console.error("Failed to fetch conversations:", error);
         setError("Failed to load conversations. Please try again later.");
@@ -270,7 +283,7 @@ function DirectMessagesPage() {
     };
 
     fetchConversations();
-  }, [currentUser?.id]);
+  }, [currentUser?.id, location.state]); // Re-fetch when user or navigation state changes
 
   const openConversation = (conversation) => {
     setSelectedConversation(conversation);
