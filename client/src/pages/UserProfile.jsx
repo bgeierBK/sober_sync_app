@@ -20,11 +20,6 @@ function UserProfile() {
   const [previewUrl, setPreviewUrl] = useState("");
   const [photoUploading, setPhotoUploading] = useState(false);
 
-  // New state for DM modal and message
-  const [isDmModalOpen, setIsDmModalOpen] = useState(false);
-  const [messageText, setMessageText] = useState("");
-  const [sendingMessage, setSendingMessage] = useState(false);
-
   const fallbackImagePath = "/blank_profile.webp";
   const today = new Date().toISOString().split("T")[0];
 
@@ -280,50 +275,6 @@ function UserProfile() {
     }
   };
 
-  // Direct Message Modal functions
-  const openDmModal = () => {
-    setIsDmModalOpen(true);
-  };
-
-  const closeDmModal = () => {
-    setIsDmModalOpen(false);
-    setMessageText("");
-  };
-
-  const handleSendMessage = async () => {
-    if (!messageText.trim()) return;
-
-    setSendingMessage(true);
-    try {
-      // Using the socketio endpoint from your routes
-      const response = await fetch("/api/direct-messages", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sender_id: loggedInUser.id,
-          receiver_id: userId,
-          message: messageText,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to send message");
-      }
-
-      // Message sent successfully
-      closeDmModal();
-      alert("Message sent successfully!");
-    } catch (error) {
-      console.error("Error sending message:", error);
-      alert("Failed to send message: " + error.message);
-    } finally {
-      setSendingMessage(false);
-    }
-  };
-
   // New function to handle viewing conversation
   const handleViewConversation = () => {
     navigate(`/messages/${loggedInUser.id}`, {
@@ -381,19 +332,14 @@ function UserProfile() {
               </Link>
             )}
 
-            {/* Show "Message User" button when viewing someone else's profile */}
-            {loggedInUser.id !== user.id && (
-              <div className="message-actions">
-                <button
-                  onClick={handleViewConversation}
-                  className="message-button"
-                >
-                  View Conversation
-                </button>
-                <button onClick={openDmModal} className="send-dm-button">
-                  Send Quick Message
-                </button>
-              </div>
+            {/* Show "Message User" button ONLY when viewing a friend's profile */}
+            {loggedInUser.id !== user.id && isFriends && (
+              <button
+                onClick={handleViewConversation}
+                className="message-button"
+              >
+                View Conversation
+              </button>
             )}
           </div>
         )}
@@ -699,41 +645,6 @@ function UserProfile() {
           <p>No past events</p>
         )}
       </div>
-
-      {/* DM Modal */}
-      {isDmModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h4>Send Message to {user.username}</h4>
-              <button onClick={closeDmModal} className="close-modal">
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <textarea
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                placeholder="Write your message here..."
-                rows={5}
-                className="message-input"
-              />
-            </div>
-            <div className="modal-footer">
-              <button
-                onClick={handleSendMessage}
-                className="send-button"
-                disabled={sendingMessage || !messageText.trim()}
-              >
-                {sendingMessage ? "Sending..." : "Send Message"}
-              </button>
-              <button onClick={closeDmModal} className="cancel-button">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
