@@ -44,6 +44,76 @@ function ConversationsList({ conversations, openConversation }) {
   );
 }
 
+// Start Conversation component
+function StartConversation({ friends, onStartConversation }) {
+  const [selectedFriendId, setSelectedFriendId] = useState("");
+
+  const handleStartConversation = () => {
+    if (!selectedFriendId) return;
+
+    const selectedFriend = friends.find(
+      (friend) => friend.id === parseInt(selectedFriendId)
+    );
+    if (selectedFriend) {
+      // Create a conversation object similar to existing conversations
+      const newConversation = {
+        id: selectedFriend.id,
+        username: selectedFriend.username,
+      };
+      onStartConversation(newConversation);
+      setSelectedFriendId(""); // Reset selection
+    }
+  };
+
+  return (
+    <div
+      style={{
+        padding: "20px",
+        borderBottom: "1px solid #ddd",
+        backgroundColor: "#f8f9fa",
+      }}
+    >
+      <h3 style={{ fontSize: "16px", marginBottom: "15px" }}>
+        Start New Conversation
+      </h3>
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <select
+          value={selectedFriendId}
+          onChange={(e) => setSelectedFriendId(e.target.value)}
+          style={{
+            padding: "8px",
+            fontSize: "14px",
+            borderRadius: "4px",
+            border: "1px solid #ccc",
+          }}
+        >
+          <option value="">Select a friend...</option>
+          {friends.map((friend) => (
+            <option key={friend.id} value={friend.id}>
+              {friend.username}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={handleStartConversation}
+          disabled={!selectedFriendId}
+          style={{
+            padding: "8px 16px",
+            fontSize: "14px",
+            backgroundColor: selectedFriendId ? "#007bff" : "#ccc",
+            color: "#fff",
+            border: "none",
+            borderRadius: "4px",
+            cursor: selectedFriendId ? "pointer" : "not-allowed",
+          }}
+        >
+          Start Conversation
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ConversationModal({
   isOpen,
   closeModal,
@@ -77,6 +147,8 @@ function ConversationModal({
           setMessages(data);
         } catch (error) {
           console.error("Error fetching messages:", error);
+          // Set empty messages array if there's an error (like no previous conversation)
+          setMessages([]);
         } finally {
           setLoading(false);
         }
@@ -235,10 +307,33 @@ function DirectMessagesPage() {
   const location = useLocation(); // Use location to read navigation state
 
   const [conversations, setConversations] = useState([]);
+  const [friends, setFriends] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Fetch friends list
+  useEffect(() => {
+    const fetchFriends = async () => {
+      if (!currentUser?.id) return;
+
+      try {
+        const response = await fetch(`/api/users/${currentUser.id}`, {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setFriends(userData.friend_list || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch friends:", error);
+      }
+    };
+
+    fetchFriends();
+  }, [currentUser?.id]);
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -271,6 +366,17 @@ function DirectMessagesPage() {
           if (conversation) {
             setSelectedConversation(conversation);
             setIsModalOpen(true);
+          } else {
+            // If conversation doesn't exist in the list, create a temporary one
+            // This handles the case where we're starting a new conversation
+            const friend = friends.find((f) => f.id === openConversationWith);
+            if (friend) {
+              setSelectedConversation({
+                id: friend.id,
+                username: friend.username,
+              });
+              setIsModalOpen(true);
+            }
           }
         }
       } catch (error) {
@@ -283,9 +389,14 @@ function DirectMessagesPage() {
     };
 
     fetchConversations();
-  }, [currentUser?.id, location.state]); // Re-fetch when user or navigation state changes
+  }, [currentUser?.id, location.state, friends]); // Re-fetch when user, navigation state, or friends change
 
   const openConversation = (conversation) => {
+    setSelectedConversation(conversation);
+    setIsModalOpen(true);
+  };
+
+  const handleStartConversation = (conversation) => {
     setSelectedConversation(conversation);
     setIsModalOpen(true);
   };
@@ -307,7 +418,11 @@ function DirectMessagesPage() {
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-      <div>
+      <div style={{ width: "30%" }}>
+        <StartConversation
+          friends={friends}
+          onStartConversation={handleStartConversation}
+        />
         <ConversationsList
           conversations={conversations}
           openConversation={openConversation}
