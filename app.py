@@ -5,7 +5,7 @@ from flask_socketio import SocketIO
 from flask_migrate import Migrate
 from server import create_app
 from server.api_utils import fetch_and_add_events
-from server.models import User, Event, ChatMessage, FriendRequest, EventPhoto, DirectMessage
+from server.models import User, Event, ChatMessage, FriendRequest, EventPhoto, DirectMessage, UserBlock
 from server.extensions import db, bcrypt
 from flask_cors import CORS
 import cloudinary.uploader
@@ -206,6 +206,129 @@ def delete_user(id):
         return {}, 204
     return {'error': 'User not found'}, 404
 
+# User blocking routes
+@app.route('/api/users/<int:user_id>/block', methods=['POST'])
+def block_user(user_id):
+    """Block a user"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    blocker_id = session['user_id']
+    
+    # Prevent self-blocking
+    if blocker_id == user_id:
+        return jsonify({'error': 'You cannot block yourself'}), 400
+    
+    # Check if users exist
+    blocker = User.query.get(blocker_id)
+    blocked_user = User.query.get(user_id)
+    
+    if not blocker or not blocked_user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Check if already blocked
+    existing_block = UserBlock.query.filter_by(
+        blocker_id=blocker_id, 
+        blocked_id=user_id
+    ).first()
+    
+    if existing_block:
+        return jsonify({'error': 'User is already blocked'}), 400
+    
+    # Create the block
+    new_block = UserBlock(blocker_id=blocker_id, blocked_id=user_id)
+    db.session.add(new_block)
+    
+    # Remove friendship if it exists
+    if blocked_user in blocker.friends:
+        blocker.friends.remove(blocked_user)
+        blocked_user.friends.remove(blocker)
+    
+    # Delete any pending friend requests between the users
+    pending_requests = FriendRequest.query.filter(
+        ((FriendRequest.sender_id == blocker_id) & (FriendRequest.receiver_id == user_id)) |
+        ((FriendRequest.sender_id == user_id) & (FriendRequest.receiver_id == blocker_id))
+    ).all()
+    
+    for request in pending_requests:
+        db.session.delete(request)
+    
+    db.session.commit()
+    
+    return jsonify({'message': 'User blocked successfully'}), 201
+
+
+@app.route('/api/users/<int:user_id>/unblock', methods=['DELETE'])
+def unblock_user(user_id):
+    """Unblock a user"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    blocker_id = session['user_id']
+    
+    # Find the block
+    block = UserBlock.query.filter_by(
+        blocker_id=blocker_id, 
+        blocked_id=user_id
+    ).first()
+    
+    if not block:
+        return jsonify({'error': 'User is not blocked'}), 404
+    
+    # Remove the block
+    db.session.delete(block)
+    db.session.commit()
+    
+    return jsonify({'message': 'User unblocked successfully'}), 200
+
+
+@app.route('/api/users/blocked', methods=['GET'])
+def get_blocked_users():
+    """Get list of users that the current user has blocked"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    user_id = session['user_id']
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    blocked_users = []
+    for block in user.sent_blocks:
+        blocked_user = block.blocked_user
+        blocked_users.append({
+            'id': blocked_user.id,
+            'username': blocked_user.username,
+            'photo_url': blocked_user.photo_url,
+            'blocked_at': block.timestamp.isoformat()
+        })
+    
+    return jsonify(blocked_users), 200
+
+
+@app.route('/api/users/<int:user_id>/is-blocked', methods=['GET'])
+def check_block_status(user_id):
+    """Check if there's a blocking relationship between current user and specified user"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    current_user_id = session['user_id']
+    current_user = User.query.get(current_user_id)
+    
+    if not current_user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Check both directions
+    is_blocked_by_me = current_user.has_blocked(user_id)
+    is_blocking_me = current_user.is_blocked_by(user_id)
+    
+    return jsonify({
+        'is_blocked_by_me': is_blocked_by_me,
+        'is_blocking_me': is_blocking_me,
+        'any_block_exists': is_blocked_by_me or is_blocking_me
+    }), 200
+
 # Chat message routes
 
 
@@ -317,6 +440,11 @@ def send_friend_request():
     if sender_id == receiver_id:
         return jsonify({"error": "You can't send a request to yourself"}), 400
 
+    # Check for blocking relationships
+    sender = User.query.get(sender_id)
+    if sender.is_blocking_relationship(receiver_id):
+        return jsonify({"error": "Cannot send friend request due to blocking"}), 403
+
     # Check if request already exists
     existing_request = FriendRequest.query.filter_by(sender_id=sender_id, receiver_id=receiver_id).first()
     if existing_request:
@@ -400,20 +528,26 @@ def get_rsvped_users(event_id):
         if not event:
             return jsonify({'error': 'Event not found'}), 404
 
-        rsvped_users = event.attendees  # Get all RSVP’d users
+        rsvped_users = event.attendees
 
-        # If no user is logged in, return all RSVP’d users under one list
+        # If no user is logged in, return all RSVP'd users
         if 'user_id' not in session:
             return jsonify({
                 'all_users': [user.to_dict() for user in rsvped_users]
             }), 200
 
-        # If user is logged in, separate friends from other users
+        # If user is logged in, filter out blocked users and separate friends
         current_user = User.query.get(session['user_id'])
-        friends = current_user.friends  # Assuming a many-to-many friendship relationship
+        friends = current_user.friends
 
-        rsvped_friends = [user.to_dict() for user in rsvped_users if user in friends]
-        other_rsvped_users = [user.to_dict() for user in rsvped_users if user not in friends]
+        # Filter out users with blocking relationships
+        filtered_users = [
+            user for user in rsvped_users 
+            if not current_user.is_blocking_relationship(user.id)
+        ]
+
+        rsvped_friends = [user.to_dict() for user in filtered_users if user in friends]
+        other_rsvped_users = [user.to_dict() for user in filtered_users if user not in friends]
 
         return jsonify({
             'friends': rsvped_friends,
@@ -696,6 +830,7 @@ def get_conversations():
         return jsonify({"error": "Unauthorized"}), 401
 
     current_user_id = session['user_id']
+    current_user = User.query.get(current_user_id)
 
     # Find all users the current user has exchanged messages with
     sent_to = db.session.query(DirectMessage.receiver_id).filter_by(sender_id=current_user_id).distinct().all()
@@ -704,16 +839,12 @@ def get_conversations():
     # Combine and remove duplicates
     conversation_user_ids = set([user_id for (user_id,) in sent_to] + [user_id for (user_id,) in received_from])
 
-    # Optimize queries with subqueries
-    latest_message_subquery = db.session.query(
-        DirectMessage.receiver_id.label('other_user_id'),
-        db.func.max(DirectMessage.timestamp).label('latest_timestamp')
-    ).filter(
-        (DirectMessage.sender_id == current_user_id) | (DirectMessage.receiver_id == current_user_id)
-    ).group_by('other_user_id').subquery()
-
     conversations = []
     for user_id in conversation_user_ids:
+        # Skip if there's a blocking relationship
+        if current_user.is_blocking_relationship(user_id):
+            continue
+            
         user = User.query.get(user_id)
         if user:
             # Fetch the latest message for preview
@@ -736,13 +867,13 @@ def get_conversations():
             ).count()
 
             conversations.append({
-                "id": user.id,  # Using "id" for consistency with the frontend
+                "id": user.id,
                 "username": user.username,
                 "photo_url": user.photo_url,
                 "latest_message": latest_message.message if latest_message else "",
                 "latest_timestamp": latest_message.timestamp.isoformat() if latest_message else None,
                 "unread_count": unread_count,
-                "messages": [message.to_dict() for message in messages]  # Include full messages
+                "messages": [message.to_dict() for message in messages]
             })
 
     # Sort by latest message timestamp
@@ -788,6 +919,10 @@ def handle_direct_message(data):
     
     if not sender or not receiver:
         return {"error": "Invalid user"}, 404
+    
+    # Check for blocking relationships
+    if sender.is_blocking_relationship(receiver_id):
+        return {"error": "Cannot send message due to blocking"}, 403
     
     # Store the message
     new_message = DirectMessage(
@@ -918,6 +1053,10 @@ def create_direct_message():
 
     if not sender or not receiver:
         return jsonify({"error": "Invalid sender or receiver"}), 404
+
+    # Check for blocking relationships
+    if sender.is_blocking_relationship(receiver_id):
+        return jsonify({"error": "Cannot send message due to blocking"}), 403
 
     # Create the new direct message
     new_message = DirectMessage(

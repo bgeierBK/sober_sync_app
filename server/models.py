@@ -22,6 +22,8 @@ class User(db.Model, SerializerMixin):
         '-related_friends',
         '-sent_messages',
         '-received_messages',
+        '-sent_blocks',
+        '-received_blocks',
         'events'  
     )
 
@@ -58,6 +60,22 @@ class User(db.Model, SerializerMixin):
         lazy='select'
     )
     
+    # User blocking relationships
+    sent_blocks = db.relationship(
+        'UserBlock',
+        foreign_keys='UserBlock.blocker_id',
+        back_populates='blocker',
+        cascade='all, delete-orphan',
+        lazy='select'
+    )
+    received_blocks = db.relationship(
+        'UserBlock',
+        foreign_keys='UserBlock.blocked_id',
+        back_populates='blocked_user',
+        cascade='all, delete-orphan',
+        lazy='select'
+    )
+    
     friends = db.relationship(
         'User',
         secondary='friend_association',
@@ -88,6 +106,30 @@ class User(db.Model, SerializerMixin):
                 })
         return result
 
+    @property
+    def blocked_users_list(self):
+        """Returns list of users that this user has blocked"""
+        return [{'id': block.blocked_user.id, 'username': block.blocked_user.username} 
+                for block in self.sent_blocks]
+
+    @property
+    def blocked_by_list(self):
+        """Returns list of users who have blocked this user"""
+        return [{'id': block.blocker.id, 'username': block.blocker.username} 
+                for block in self.received_blocks]
+
+    def is_blocked_by(self, user_id):
+        """Check if this user is blocked by another user"""
+        return any(block.blocker_id == user_id for block in self.received_blocks)
+
+    def has_blocked(self, user_id):
+        """Check if this user has blocked another user"""
+        return any(block.blocked_id == user_id for block in self.sent_blocks)
+
+    def is_blocking_relationship(self, user_id):
+        """Check if there's any blocking relationship between users (either direction)"""
+        return self.is_blocked_by(user_id) or self.has_blocked(user_id)
+
     @hybrid_property
     def hashed_password(self):
         raise AttributeError('Password hashes may not be viewed')
@@ -117,6 +159,35 @@ class User(db.Model, SerializerMixin):
             return value
         else:
             raise ValueError('Not a valid email address')
+
+
+class UserBlock(db.Model, SerializerMixin):
+    __tablename__ = 'user_blocks'
+
+    serialize_rules = ('-blocker', '-blocked_user')
+
+    id = db.Column(db.Integer, primary_key=True)
+    blocker_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
+    blocked_id = db.Column(db.Integer, db.ForeignKey('users_table.id'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    blocker = db.relationship('User', foreign_keys=[blocker_id], back_populates='sent_blocks', lazy='joined')
+    blocked_user = db.relationship('User', foreign_keys=[blocked_id], back_populates='received_blocks', lazy='joined')
+
+    # Constraints
+    __table_args__ = (
+        db.UniqueConstraint('blocker_id', 'blocked_id', name='unique_block_pair'),
+        db.CheckConstraint('blocker_id != blocked_id', name='no_self_block')
+    )
+
+    @validates('blocker_id', 'blocked_id')
+    def validate_different_users(self, key, value):
+        if key == 'blocked_id' and hasattr(self, 'blocker_id') and self.blocker_id == value:
+            raise ValueError("Users cannot block themselves")
+        if key == 'blocker_id' and hasattr(self, 'blocked_id') and self.blocked_id == value:
+            raise ValueError("Users cannot block themselves")
+        return value
 
 
 class FriendRequest(db.Model, SerializerMixin):
