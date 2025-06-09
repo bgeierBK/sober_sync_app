@@ -20,8 +20,32 @@ function UserProfile() {
   const [previewUrl, setPreviewUrl] = useState("");
   const [photoUploading, setPhotoUploading] = useState(false);
 
+  // Blocking states
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isBlockingMe, setIsBlockingMe] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [blockingInProgress, setBlockingInProgress] = useState(false);
+
   const fallbackImagePath = "/blank_profile.webp";
   const today = new Date().toISOString().split("T")[0];
+
+  // Check blocking status
+  const checkBlockStatus = async () => {
+    if (!loggedInUser || loggedInUser.id === userId) return;
+
+    try {
+      const response = await fetch(`/api/users/${userId}/is-blocked`, {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const blockData = await response.json();
+        setIsBlocked(blockData.is_blocked_by_me);
+        setIsBlockingMe(blockData.is_blocking_me);
+      }
+    } catch (error) {
+      console.error("Error checking block status:", error);
+    }
+  };
 
   // Fetch user profile
   const fetchUserProfile = async () => {
@@ -70,12 +94,70 @@ function UserProfile() {
       .catch((err) => console.error("Error fetching logged-in user:", err));
   }, []);
 
-  // Fetch user profile on mount and when dependencies change
+  // Fetch user profile and block status on mount and when dependencies change
   useEffect(() => {
     if (loggedInUser) {
       fetchUserProfile();
+      checkBlockStatus();
     }
   }, [userId, loggedInUser]);
+
+  // Block user function
+  const handleBlockUser = async () => {
+    setBlockingInProgress(true);
+    try {
+      const response = await fetch(`/api/users/${userId}/block`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        setIsBlocked(true);
+        setIsFriends(false); // Remove friendship status
+        setFriendRequestSent(false); // Remove friend request status
+        setIncomingFriendRequest(null); // Remove incoming friend request
+        setShowBlockModal(false);
+        // Refresh user data to reflect changes
+        await fetchUserProfile();
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to block user: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error("Error blocking user:", error);
+      alert("Failed to block user. Please try again.");
+    } finally {
+      setBlockingInProgress(false);
+    }
+  };
+
+  // Unblock user function
+  const handleUnblockUser = async () => {
+    setBlockingInProgress(true);
+    try {
+      const response = await fetch(`/api/users/${userId}/unblock`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        setIsBlocked(false);
+        // Refresh user data
+        await fetchUserProfile();
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to unblock user: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error("Error unblocking user:", error);
+      alert("Failed to unblock user. Please try again.");
+    } finally {
+      setBlockingInProgress(false);
+    }
+  };
 
   const handleEditProfile = () => {
     setEditedUser({
@@ -234,7 +316,8 @@ function UserProfile() {
       if (response.ok) {
         setFriendRequestSent(true);
       } else {
-        console.error("Failed to send friend request");
+        const errorData = await response.json();
+        alert(`Failed to send friend request: ${errorData.error}`);
       }
     } catch (error) {
       console.error("Error sending friend request:", error);
@@ -312,12 +395,107 @@ function UserProfile() {
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!user) return <div>User not found</div>;
+
+  // If the current user is blocked by this user, show limited info
+  if (isBlockingMe) {
+    return (
+      <div className="user-profile">
+        <div style={{ textAlign: "center", padding: "2rem", color: "#666" }}>
+          <h3 style={{ color: "#d32f2f", marginBottom: "1rem" }}>
+            User Profile Unavailable
+          </h3>
+          <p>This user has restricted access to their profile.</p>
+        </div>
+      </div>
+    );
+  }
+
   const upcomingEvents =
     user.events?.filter((event) => event.date >= today) || [];
   const pastEvents = user.events?.filter((event) => event.date < today) || [];
 
   return (
     <div className="user-profile">
+      {/* Block Confirmation Modal */}
+      {showBlockModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "2rem",
+              borderRadius: "8px",
+              maxWidth: "400px",
+              width: "90%",
+              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <h3 style={{ marginTop: 0, color: "#d32f2f" }}>Block User</h3>
+            <p style={{ margin: "1rem 0", lineHeight: "1.5" }}>
+              Are you sure you want to block <strong>{user.username}</strong>?
+            </p>
+            <p style={{ margin: "1rem 0", lineHeight: "1.5" }}>
+              This will remove them from your friends list, cancel any pending
+              friend requests, and prevent them from messaging you or seeing
+              your profile.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                gap: "1rem",
+                justifyContent: "flex-end",
+                marginTop: "1.5rem",
+              }}
+            >
+              <button
+                onClick={handleBlockUser}
+                disabled={blockingInProgress}
+                style={{
+                  backgroundColor: blockingInProgress ? "#ccc" : "#d32f2f",
+                  color: "white",
+                  border: "none",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "4px",
+                  cursor: blockingInProgress ? "not-allowed" : "pointer",
+                  fontSize: "0.9rem",
+                  transition: "background-color 0.2s",
+                }}
+              >
+                {blockingInProgress ? "Blocking..." : "Yes, Block User"}
+              </button>
+              <button
+                onClick={() => setShowBlockModal(false)}
+                disabled={blockingInProgress}
+                style={{
+                  backgroundColor: blockingInProgress ? "#ccc" : "#757575",
+                  color: "white",
+                  border: "none",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "4px",
+                  cursor: blockingInProgress ? "not-allowed" : "pointer",
+                  fontSize: "0.9rem",
+                  transition: "background-color 0.2s",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Profile Header with Username */}
       <div className="profile-header">
         <h3>{user.username}</h3>
@@ -332,8 +510,8 @@ function UserProfile() {
               </Link>
             )}
 
-            {/* Show "Message User" button ONLY when viewing a friend's profile */}
-            {loggedInUser.id !== user.id && isFriends && (
+            {/* Show "Message User" button ONLY when viewing a friend's profile and not blocked */}
+            {loggedInUser.id !== user.id && isFriends && !isBlocked && (
               <button
                 onClick={handleViewConversation}
                 className="message-button"
@@ -596,24 +774,77 @@ function UserProfile() {
         </div>
       )}
 
-      {/* Buttons for adding and removing friends */}
-      {loggedInUser &&
-        loggedInUser.id !== user.id &&
-        !isFriends &&
-        !friendRequestSent && (
-          <button onClick={handleAddFriend}>Send Friend Request</button>
-        )}
+      {/* Action buttons section */}
+      {loggedInUser && loggedInUser.id !== user.id && (
+        <div
+          style={{
+            margin: "1.5rem 0",
+            padding: "1rem",
+            borderTop: "1px solid #eee",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.5rem",
+          }}
+        >
+          {/* Block/Unblock button */}
+          {isBlocked ? (
+            <button
+              onClick={handleUnblockUser}
+              disabled={blockingInProgress}
+              style={{
+                backgroundColor: blockingInProgress ? "#ccc" : "#388e3c",
+                color: "white",
+                border: "none",
+                padding: "0.5rem 1rem",
+                borderRadius: "4px",
+                cursor: blockingInProgress ? "not-allowed" : "pointer",
+                fontSize: "0.9rem",
+                transition: "background-color 0.2s",
+                alignSelf: "flex-start",
+              }}
+            >
+              {blockingInProgress ? "Unblocking..." : "Unblock User"}
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowBlockModal(true)}
+              style={{
+                backgroundColor: "#d32f2f",
+                color: "white",
+                border: "none",
+                padding: "0.5rem 1rem",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+                transition: "background-color 0.2s",
+                alignSelf: "flex-start",
+              }}
+            >
+              Block User
+            </button>
+          )}
 
-      {isFriends && <button>Unfriend</button>}
-      {friendRequestSent && <p>Friend request sent</p>}
-      {incomingFriendRequest && (
-        <p>
-          You have an incoming friend request from{" "}
-          <Link to={`/users/${incomingFriendRequest.sender_id}`}>
-            {incomingFriendRequest.sender_username}
-          </Link>
-        </p>
+          {/* Friend request buttons - only show if not blocked */}
+          {!isBlocked && (
+            <>
+              {!isFriends && !friendRequestSent && (
+                <button onClick={handleAddFriend}>Send Friend Request</button>
+              )}
+              {isFriends && <button>Unfriend</button>}
+              {friendRequestSent && <p>Friend request sent</p>}
+              {incomingFriendRequest && (
+                <p>
+                  You have an incoming friend request from{" "}
+                  <Link to={`/users/${incomingFriendRequest.sender_id}`}>
+                    {incomingFriendRequest.sender_username}
+                  </Link>
+                </p>
+              )}
+            </>
+          )}
+        </div>
       )}
+
       <div className="events-list">
         <h4>Upcoming Events</h4>
         {upcomingEvents.length > 0 ? (
