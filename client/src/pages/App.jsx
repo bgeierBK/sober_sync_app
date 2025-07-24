@@ -33,7 +33,6 @@ function App() {
   return (
     <>
       <NavBar currentUser={currentUser} setCurrentUser={setCurrentUser} />
-      <h2>Sober Sync</h2>
       <Outlet context={{ currentUser, setCurrentUser }} />
     </>
   );
