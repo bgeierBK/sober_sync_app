@@ -33,7 +33,9 @@ function NavBar({ currentUser, setCurrentUser }) {
     <nav className="navbar" role="navigation" aria-label="main navigation">
       <div className="navbar-brand">
         <NavLink className="navbar-item" to="/">
-          <img src="https://images.squarespace-cdn.com/content/v1/67707a331f124554f5f908e0/8f58670c-c317-4a66-bb5b-66deaae5b52a/sober-sync-logo-files-logo-mark-white-rgb-900px-w-300ppi.png" />
+          <div style={{backgroundColor: "orange", padding: 10}}>
+            <img src="https://images.squarespace-cdn.com/content/v1/67707a331f124554f5f908e0/8f58670c-c317-4a66-bb5b-66deaae5b52a/sober-sync-logo-files-logo-mark-white-rgb-900px-w-300ppi.png" />
+          </div>
         </NavLink>
         <NavLink className="navbar-item" to="/">
         <h1 class="title is-4">
