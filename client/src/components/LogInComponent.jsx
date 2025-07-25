@@ -28,8 +28,8 @@ function LogInComponent() {
   }
 
   return (
-    <div className="section is-medium" style={{display: "flex", justifyContent: "center"}}>
-      <div className="box" style={{maxWidth: 500}}>
+    <div className="container" style={{ display: "flex", justifyContent: "center" }}>
+      <div className="box" style={{ maxWidth: 500 }}>
         <h5 className="title is-5">Log In</h5>
         <form
           onSubmit={handleSubmit}
@@ -38,31 +38,30 @@ function LogInComponent() {
           <div className="field">
             <label className="label">
               Email Address
-              <input
-                type="email"
-                name="email"
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                value={email}
-                className="input"
-              />
             </label>
+            <input
+              type="email"
+              name="email"
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              value={email}
+              className="input"
+            />
           </div>
           <div className="field">
             <label className="label">
               Password
-              <input
-                type="password"
-                name="password"
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                value={password}
-                className="input"
-              />
             </label>
-            <br></br>
-            <input type="submit" value="Log In!" className="button is-primary" />
+            <input
+              type="password"
+              name="password"
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              value={password}
+              className="input"
+            />
           </div>
+          <input type="submit" value="Log In!" className="button is-primary" />
         </form>
       </div>
     </div>
