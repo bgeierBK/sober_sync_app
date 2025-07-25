@@ -49,7 +49,7 @@ function NavBar({ currentUser, setCurrentUser }) {
             SOBER SYNC
           </h1>
         </NavLink>
-        <NavLink
+        <button
           role="button"
           className={burgerIsOpen ? "navbar-burger is-active" : "navbar-burger"}
           aria-label="menu"
@@ -61,7 +61,7 @@ function NavBar({ currentUser, setCurrentUser }) {
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
-        </NavLink>
+        </button>
       </div>
 
       {currentUser == null ? (
