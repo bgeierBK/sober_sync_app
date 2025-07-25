@@ -79,6 +79,7 @@ function EventCard({ event, currentUser, setCurrentUser }) {
 
   return (
     <div
+      className="card"
       style={{
         display: "flex",
         gap: "16px",
@@ -98,21 +99,21 @@ function EventCard({ event, currentUser, setCurrentUser }) {
       />
       <div>
         <p>
-          <strong>{event.name}</strong>
+          <h6 className="title is-6">{event.name}</h6>
         </p>
         <p>{event.date}</p>
         <p>{event.venue_name}</p>
         <div>
           {isLoggedIn ? (
             isRSVPed ? (
-              <button onClick={handleCancelRSVP}>Cancel RSVP</button>
+              <button onClick={handleCancelRSVP} className="button is-danger">Cancel RSVP</button>
             ) : (
-              <button onClick={handleRSVP}>RSVP</button>
+              <button onClick={handleRSVP} className="button is-primary">RSVP</button>
             )
           ) : (
-            <p>Please log in to RSVP</p>
+            <button className="button is-primary">Please log in to RSVP</button>
           )}
-          <button onClick={() => navigate(`/events/${event.id}`)}>
+          <button onClick={() => navigate(`/events/${event.id}`)} className="button is-primary is-light">
             Go to Chat
           </button>
         </div>

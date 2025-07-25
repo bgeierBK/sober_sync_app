@@ -45,10 +45,12 @@ function EventContainer({ events, setEvents, currentUser, setCurrentUser }) {
   console.log("event container mounted");
 
   return (
-    <>
-      <h2>Upcoming Events</h2>
+    <div className="columns is-centered">
+    <div className="column is-half">
+      <h2 className="title is-5">Upcoming Events</h2>
       {mappedEvents}
-    </>
+    </div>
+    </div>
   );
 }
 
