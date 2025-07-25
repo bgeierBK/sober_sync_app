@@ -111,7 +111,7 @@ function EventCard({ event, currentUser, setCurrentUser }) {
               <button onClick={handleRSVP} className="button is-primary">RSVP</button>
             )
           ) : (
-            <button className="button is-primary">Please log in to RSVP</button>
+            <p>Please log in to RSVP</p>
           )}
           <button onClick={() => navigate(`/events/${event.id}`)} className="button is-primary is-light">
             Go to Chat
