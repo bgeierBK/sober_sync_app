@@ -106,40 +106,40 @@ const TheLounge = () => {
 
   return (
     <div className="the-lounge">
+      <div className="columns is-centered">
+        <div className="column is-half">
       <div className="lounge-header">
-        <h2>The Lounge</h2>
-        <p>A place for everyone to chat and connect</p>
+        <h2 className="title is-5">The Lounge</h2>
+        <div className="block">A place for everyone to chat and connect</div>
+        <div className="block"></div>
       </div>
-
-      <div className="messages-container">
-        <div className="messages">
-          {messages.length > 0 ? (
-            messages.map((msg, index) => (
-              <div
-                key={msg.id || index}
-                className={`message ${
-                  msg.username === username ? "my-message" : "other-message"
-                }`}
-              >
-                <div className="message-header">
-                  <strong className="username">{msg.username}</strong>
-                  <span className="timestamp">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
-                <div className="message-body">{msg.message}</div>
-              </div>
-            ))
-          ) : (
-            <p className="no-messages">
-              No messages yet. Be the first to start the conversation!
-            </p>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      <div className="input-container">
+          <div className="messages-container">
+            <div className="messages">
+              {messages.length > 0 ? (
+                messages.map((msg, index) => (
+                  <div
+                    key={msg.id || index}
+                    className={`message ${msg.username === username ? "my-message" : "other-message"
+                      }`}
+                  >
+                    <div className="message-header">
+                      <strong className="username">{msg.username}</strong>
+                      <span className="timestamp">
+                        {new Date(msg.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div className="message-body">{msg.message}</div>
+                  </div>
+                ))
+              ) : (
+                <p className="no-messages">
+                  No messages yet. Be the first to start the conversation!
+                </p>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+      <div className="field">
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -152,17 +152,20 @@ const TheLounge = () => {
             }
           }}
           rows={2}
-          className="message-input"
+          className="textarea"
         />
         <button
           onClick={sendMessage}
           disabled={!isLoggedIn || !message.trim()}
-          className="send-button"
+          className="button is-primary"
         >
           Send
         </button>
       </div>
     </div>
+        </div>
+      </div>
+
   );
 };
 
