@@ -5,7 +5,7 @@ function LogInComponent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { setCurrentUser } = useOutletContext();
+  const { check_session } = useOutletContext();
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -19,7 +19,7 @@ function LogInComponent() {
       body: JSON.stringify({ email, password }),
     }).then((response) => {
       if (response.ok) {
-        response.json().then((user) => setCurrentUser(user));
+        check_session();
         navigate("/");
       } else {
         alert("Invalid email or password!");

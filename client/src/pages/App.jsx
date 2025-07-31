@@ -19,6 +19,10 @@ function App() {
 
   // Check session and set the current user
   useEffect(() => {
+    check_session()
+  }, []);
+
+  function check_session() {
     fetch("/api/check_session", {
       credentials: "include",
     })
@@ -28,12 +32,12 @@ function App() {
         }
       })
       .catch((error) => console.error("Failed to check session:", error));
-  }, []);
+  }
 
   return (
     <>
       <NavBar currentUser={currentUser} setCurrentUser={setCurrentUser} />
-      <Outlet context={{ currentUser, setCurrentUser }} />
+      <Outlet context={{ currentUser, setCurrentUser, check_session }} />
     </>
   );
 }
