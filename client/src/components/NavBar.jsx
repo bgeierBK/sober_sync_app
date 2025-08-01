@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import "../index.css";
 
 // eslint-disable-next-line react/prop-types
 function NavBar({ currentUser, setCurrentUser }) {
   const [burgerIsOpen, setBurgerIsOpen] = useState()
+  const navigate = useNavigate()
 
   function handleLogOut() {
     fetch("/api/logout", {
@@ -18,6 +19,7 @@ function NavBar({ currentUser, setCurrentUser }) {
         if (response.ok) {
           setCurrentUser(null);
           alert("Logged out successfully!");
+          navigate("/");
         } else {
           alert("failed to log out");
         }
