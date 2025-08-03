@@ -252,6 +252,7 @@ class Event(db.Model, SerializerMixin):
     venue_name = db.Column(db.String(255), nullable=False)
     city = db.Column(db.String(100), nullable=False)
     photo = db.Column(db.String(255))
+    source = db.Column(db.String(100))
     
 
     # Photos relationship
