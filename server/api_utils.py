@@ -209,4 +209,4 @@ def fetch_and_add_eventbrite_events():
 def fetch_and_add_events():
     """Main function to fetch and add events from all sources"""
     fetch_and_add_edmtrain_events()
-    fetch_and_add_eventbrite_events()
+    # fetch_and_add_eventbrite_events()
