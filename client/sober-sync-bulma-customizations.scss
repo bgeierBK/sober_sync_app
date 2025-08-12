@@ -26,7 +26,7 @@ $orange-100-percent: #311c06;
 $secondary-white: #F9F9F7;
 
 
-// Path to Bulma's sass folder
+// Path to Bulma's sass folder (Global customizations)
 @use "bulma/sass" with (
   $family-primary: '"Inter", sans-serif',
   $primary: $orange-base,
@@ -36,7 +36,7 @@ $secondary-white: #F9F9F7;
   $title-color: $blue-base,
   $footer-background-color: $blue-base,
   $footer-padding: 24px 80px,
-  $button-text-color: white
+  $button-text-color: $secondary-white
 );
 
 // Import the Google Font

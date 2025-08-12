@@ -86,7 +86,7 @@ function SignUpComponent() {
   }
 
   return (
-    <div className="container" style={{ display: "flex", justifyContent: "center" }}>
+    <div className="section is-small is-flex is-justify-content-center">
       <div className="box" style={{ maxWidth: 500 }}>
         <form onSubmit={handleSubmit} className="field">
           <h5 className="title is-5">Sign Up</h5>

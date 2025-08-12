@@ -28,7 +28,7 @@ function LogInComponent() {
   }
 
   return (
-    <div className="container" style={{ display: "flex", justifyContent: "center" }}>
+    <div className="section is-medium is-flex is-justify-content-center">
       <div className="box" style={{ maxWidth: 500 }}>
         <h5 className="title is-5">Log In</h5>
         <form

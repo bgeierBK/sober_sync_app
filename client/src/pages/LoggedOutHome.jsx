@@ -29,7 +29,7 @@ function LoggedOutHome() {
                         </div>
                     </div>
                     <container class="image is-5by3 column">
-                        <img src="https://bulma.io/assets/images/placeholders/128x128.png" />
+                        <img src="/HomePhoto.jpg" alt="Festival audience" />
                     </container>
                 </div>
             </section>
@@ -104,11 +104,6 @@ function LoggedOutHome() {
                     </form>
                 </div>
             </div>
-            <section className="footer is-flex is-justify-content-space-between">
-                <p className="has-text-white">© 2025 Sober Sync. All rights reserved.</p>
-                {/* TODO: add links to terms, privacy policy, cookie settings */}
-                {/* <p className="has-text-white">Links go here</p> */}
-            </section>
         </>
     );
 }

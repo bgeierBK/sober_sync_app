@@ -38,6 +38,11 @@ function App() {
     <>
       <NavBar currentUser={currentUser} setCurrentUser={setCurrentUser} />
       <Outlet context={{ currentUser, setCurrentUser, check_session }} />
+      <section className="footer is-flex is-justify-content-space-between">
+        <p className="has-text-white">© 2025 Sober Sync. All rights reserved.</p>
+        {/* TODO: add links to terms, privacy policy, cookie settings */}
+        {/* <p className="has-text-white">Links go here</p> */}
+      </section>
     </>
   );
 }
