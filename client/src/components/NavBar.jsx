@@ -36,7 +36,7 @@ function NavBar({ currentUser, setCurrentUser }) {
   }
 
   return (
-    <nav className="navbar" role="navigation" aria-label="main navigation">
+    <nav className="navbar" role="navigation" aria-label="main navigation" style={{ padding: "15px 30px" }}>
       <div className="navbar-brand">
         <NavLink to="/" style={{ width: "150px", height: "80px", padding: "15px"}} >
           <figure className="image" >
@@ -63,13 +63,23 @@ function NavBar({ currentUser, setCurrentUser }) {
         <div id="menu" className={burgerIsOpen ? "navbar-menu is-active" : "navbar-menu"} >
           <div className="navbar-end">
             <div className="navbar-item">
-              <NavLink to="/about" className="navbar-item" onClick={handleBurgerClick}>
-                About
+              <NavLink to="/" className="navbar-item" onClick={handleBurgerClick}>
+                Discover
               </NavLink>
             </div>
             <div className="navbar-item">
               <NavLink to="/" className="navbar-item" onClick={handleBurgerClick}>
-                Events
+                Connections
+              </NavLink>
+            </div>
+            <div className="navbar-item">
+              <NavLink to="/thelounge" className="navbar-item" onClick={handleBurgerClick}>
+                The Lounge
+              </NavLink>
+            </div>
+            <div className="navbar-item">
+              <NavLink to="/about" className="navbar-item" onClick={handleBurgerClick}>
+                Our Mission
               </NavLink>
             </div>
             <div className="navbar-item">
