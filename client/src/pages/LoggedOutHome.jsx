@@ -20,7 +20,7 @@ function LoggedOutHome() {
                     <div class="column">
                         <h2 class="title is-2">Creating sober spaces everywhere for everyone</h2>
                         <div class="buttons are-medium">
-                            <NavLink to="/login" className="button is-primary is-rounded">
+                            <NavLink to="/login" className="button is-primary is-rounded" style={{ color: "white "}}>
                                 Log In
                             </NavLink>
                             <NavLink to="/signup" className="button is-primary is-rounded is-outlined">
