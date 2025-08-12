@@ -35,21 +35,13 @@ function NavBar({ currentUser, setCurrentUser }) {
     setBurgerIsOpen(state => !state);
   }
 
-  // Debug currentUser object - you can remove this after fixing the issue
-  console.log("Current user in navbar:", currentUser);
-
   return (
     <nav className="navbar" role="navigation" aria-label="main navigation">
       <div className="navbar-brand">
-        <NavLink className="navbar-item" to="/">
-          <div style={{ backgroundColor: "#f68c1f", padding: "10px 10px 8px 10px" }}>
-            <img src="https://images.squarespace-cdn.com/content/v1/67707a331f124554f5f908e0/8f58670c-c317-4a66-bb5b-66deaae5b52a/sober-sync-logo-files-logo-mark-white-rgb-900px-w-300ppi.png" />
-          </div>
-        </NavLink>
-        <NavLink className="navbar-item" to="/">
-          <h1 class="title is-3">
-            SOBER SYNC
-          </h1>
+        <NavLink to="/" style={{ width: "150px", height: "80px", padding: "15px"}} >
+          <figure className="image" >
+            <img src="/Logo.png" />
+          </figure>
         </NavLink>
         <button
           role="button"
@@ -81,12 +73,7 @@ function NavBar({ currentUser, setCurrentUser }) {
               </NavLink>
             </div>
             <div className="navbar-item">
-              <NavLink to="/signup" className="button is-light" onClick={handleBurgerClick}>
-                Sign up
-              </NavLink>
-            </div>
-            <div className="navbar-item">
-              <NavLink to="/login" className="button is-light" onClick={handleBurgerClick}>
+              <NavLink to="/login" className="button is-primary is-outlined" onClick={handleBurgerClick}>
                 Log in
               </NavLink>
             </div>
