@@ -43,7 +43,7 @@ function EventContainer({ events, setEvents, currentUser, setCurrentUser }) {
     ));
 
   return (
-    <div className="section">
+    <div className="section is-medium has-background-white-ter">
       <div className="container has-text-centered">
         <h2 className="title is-2 mb-6">Upcoming Events</h2>
       </div>

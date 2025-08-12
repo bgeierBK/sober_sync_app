@@ -23,6 +23,8 @@ $orange-80-percent: #7b4610;
 $orange-90-percent: #522f0a;
 $orange-100-percent: #311c06;
 
+$secondary-white: #F9F9F7;
+
 
 // Path to Bulma's sass folder
 @use "bulma/sass" with (
@@ -30,7 +32,11 @@ $orange-100-percent: #311c06;
   $primary: $orange-base,
   $link: $blue-50-percent,
   $control-border-width: 2px,
-  $input-shadow: none
+  $input-shadow: none,
+  $title-color: $blue-base,
+  $footer-background-color: $blue-base,
+  $footer-padding: 24px 80px,
+  $button-text-color: white
 );
 
 // Import the Google Font
