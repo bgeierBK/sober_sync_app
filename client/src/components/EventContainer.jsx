@@ -48,7 +48,7 @@ function EventContainer({ events, setEvents, currentUser, setCurrentUser }) {
         <h2 className="title is-2 mb-6">Upcoming Events</h2>
       </div>
       <div className="container grid is-col-min-14">
-        {mappedEvents}
+        {mappedEvents.slice(0, 9)}
       </div>
     </div>
   );

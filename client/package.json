@@ -7,13 +7,16 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+      "build-bulma": "sass --load-path=node_modules sober-sync-bulma-customizations.scss sober-sync-bulma-customizations.css",
+      "start": "npm run build-bulma -- --watch"
   },
   "dependencies": {
     "bulma": "^1.0.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.0.2"
+    "react-router-dom": "^7.0.2",
+    "sass": "^1.90.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
