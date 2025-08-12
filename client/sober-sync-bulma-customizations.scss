@@ -1,0 +1,43 @@
+// Our brand colors
+$blue-10-percent: #d4d8e7;
+$blue-20-percent: #b7bfd7;
+$blue-30-percent: #939fc4;
+$blue-40-percent: #6e7eb0;
+$blue-50-percent: #4a5e9c;
+$blue-base: #263e88;
+$blue-60-percent: #203471;
+$blue-70-percent: #19295b;
+$blue-80-percent: #131f44;
+$blue-90-percent: #0d152d;
+$blue-100-percent: #080c1b;
+
+$orange-10-percent: #fde8d2;
+$orange-20-percent: #fcd9b4;
+$orange-30-percent: #fbc68f;
+$orange-40-percent: #f9b26a;
+$orange-50-percent: #f89f44;
+$orange-base: #f68c1f;
+$orange-60-percent: #cd751a;
+$orange-70-percent: #a45d15;
+$orange-80-percent: #7b4610;
+$orange-90-percent: #522f0a;
+$orange-100-percent: #311c06;
+
+$secondary-white: #F9F9F7;
+
+
+// Path to Bulma's sass folder (Global customizations)
+@use "bulma/sass" with (
+  $family-primary: '"Inter", sans-serif',
+  $primary: $orange-base,
+  $link: $blue-50-percent,
+  $control-border-width: 2px,
+  $input-shadow: none,
+  $title-color: $blue-base,
+  $footer-background-color: $blue-base,
+  $footer-padding: 24px 80px,
+  $button-text-color: $secondary-white
+);
+
+// Import the Google Font
+@import url("https://fonts.googleapis.com/css?family=Inter:400,700");

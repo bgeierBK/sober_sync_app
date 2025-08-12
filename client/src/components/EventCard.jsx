@@ -79,41 +79,32 @@ function EventCard({ event, currentUser, setCurrentUser }) {
 
   return (
     <div
-      style={{
-        display: "flex",
-        gap: "16px",
-        alignItems: "center",
-        marginBottom: "24px",
-      }}
+      className="cell card"
     >
-      <img
-        src={event.photo || fallbackImage}
-        alt="Event"
-        style={{
-          width: "150px",
-          height: "150px",
-          objectFit: "cover",
-          borderRadius: "8px",
-        }}
-      />
-      <div>
-        <p>
-          <strong>{event.name}</strong>
-        </p>
-        <p>{event.date}</p>
-        <p>{event.venue_name}</p>
+      <div className="card-image">
+        <figure className="image is-1by1">
+          <img
+            src={event.photo || fallbackImage}
+            alt="Event"
+          />
+        </figure>
+      </div>
+      <div class="card-content">
+        <h4 className="title is-4">{event.name}</h4>
+        <p className="text">{event.date}</p>
+        <h6 className="title is-6">{event.venue_name}</h6>
         <div>
           {isLoggedIn ? (
             isRSVPed ? (
-              <button onClick={handleCancelRSVP}>Cancel RSVP</button>
+              <button onClick={handleCancelRSVP} className="button is-danger">Cancel RSVP</button>
             ) : (
-              <button onClick={handleRSVP}>RSVP</button>
+              <button onClick={handleRSVP} className="button is-primary">RSVP</button>
             )
           ) : (
-            <p>Please log in to RSVP</p>
+            <></>
           )}
-          <button onClick={() => navigate(`/events/${event.id}`)}>
-            Go to Chat
+          <button onClick={() => navigate(`/events/${event.id}`)} className="button is-primary is-light">
+            View Event
           </button>
         </div>
         {message && <p>{message}</p>}

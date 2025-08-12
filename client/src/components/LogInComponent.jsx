@@ -5,7 +5,7 @@ function LogInComponent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { setCurrentUser } = useOutletContext();
+  const { check_session } = useOutletContext();
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -19,7 +19,7 @@ function LogInComponent() {
       body: JSON.stringify({ email, password }),
     }).then((response) => {
       if (response.ok) {
-        response.json().then((user) => setCurrentUser(user));
+        check_session();
         navigate("/");
       } else {
         alert("Invalid email or password!");
@@ -28,39 +28,43 @@ function LogInComponent() {
   }
 
   return (
-    <form
-      className="bg-slate-300 p-6 rounded-lg shadow-lg w-full max-w-md mx-auto"
-      onSubmit={handleSubmit}
-    >
-      <h3>Log In!</h3>
-      <div className="mb-4">
-        <label className="block font-medium mb-2">
-          Email Address
-          <input
-            type="email"
-            name="email"
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            value={email}
-            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          />
-        </label>
+    <div className="section is-medium is-flex is-justify-content-center">
+      <div className="box" style={{ maxWidth: 500 }}>
+        <h5 className="title is-5">Log In</h5>
+        <form
+          onSubmit={handleSubmit}
+          className="field"
+        >
+          <div className="field">
+            <label className="label">
+              Email Address
+            </label>
+            <input
+              type="email"
+              name="email"
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              value={email}
+              className="input"
+            />
+          </div>
+          <div className="field">
+            <label className="label">
+              Password
+            </label>
+            <input
+              type="password"
+              name="password"
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              value={password}
+              className="input"
+            />
+          </div>
+          <input type="submit" value="Log In!" className="button is-primary" />
+        </form>
       </div>
-      <div className="mb-4">
-        <label className="block font-medium mb-2">
-          Password
-          <input
-            type="password"
-            name="password"
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            value={password}
-            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          />
-        </label>
-        <input type="submit" value="Log In" />
-      </div>
-    </form>
+    </div>
   );
 }
 

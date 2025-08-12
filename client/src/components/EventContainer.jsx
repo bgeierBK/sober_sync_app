@@ -42,13 +42,15 @@ function EventContainer({ events, setEvents, currentUser, setCurrentUser }) {
       />
     ));
 
-  console.log("event container mounted");
-
   return (
-    <>
-      <h2>Upcoming Events</h2>
-      {mappedEvents}
-    </>
+    <div className="section is-medium has-background-white-ter">
+      <div className="container has-text-centered">
+        <h2 className="title is-2 mb-6">Upcoming Events</h2>
+      </div>
+      <div className="container grid is-col-min-14">
+        {mappedEvents.slice(0, 9)}
+      </div>
+    </div>
   );
 }
 

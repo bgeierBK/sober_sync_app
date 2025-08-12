@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import EventContainer from "../components/EventContainer";
+import LoggedInHome from "./LoggedInHome";
+import LoggedOutHome from "./LoggedOutHome";
 
 function Home() {
   const { currentUser, setCurrentUser } = useOutletContext();
@@ -10,12 +12,7 @@ function Home() {
 
   return (
     <>
-      <EventContainer
-        events={events}
-        setEvents={setEvents}
-        currentUser={currentUser}
-        setCurrentUser={setCurrentUser}
-      />
+      { currentUser ? <LoggedInHome /> : <LoggedOutHome /> }
     </>
   );
 }

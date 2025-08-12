@@ -13,3 +13,6 @@ frontend/dist/
 .env
 
 .venv
+
+# Local config files
+.vscode/

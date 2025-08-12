@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import "../index.css";
 
 // eslint-disable-next-line react/prop-types
 function NavBar({ currentUser, setCurrentUser }) {
+  const [burgerIsOpen, setBurgerIsOpen] = useState()
+  const navigate = useNavigate()
+
   function handleLogOut() {
     fetch("/api/logout", {
       method: "DELETE",
@@ -16,6 +19,7 @@ function NavBar({ currentUser, setCurrentUser }) {
         if (response.ok) {
           setCurrentUser(null);
           alert("Logged out successfully!");
+          navigate("/");
         } else {
           alert("failed to log out");
         }
@@ -24,58 +28,90 @@ function NavBar({ currentUser, setCurrentUser }) {
         console.error("Problem with logout:", error.message);
         alert("Problem with logout:" + error.message);
       });
+      setBurgerIsOpen(state => false)
   }
 
-  // Debug currentUser object - you can remove this after fixing the issue
-  console.log("Current user in navbar:", currentUser);
+  function handleBurgerClick() {
+    setBurgerIsOpen(state => !state);
+  }
 
   return (
-    <nav className="bg-blue-500 text-slate-200">
+    <nav className="navbar" role="navigation" aria-label="main navigation">
+      <div className="navbar-brand">
+        <NavLink to="/" style={{ width: "150px", height: "80px", padding: "15px"}} >
+          <figure className="image" >
+            <img src="/Logo.png" />
+          </figure>
+        </NavLink>
+        <button
+          role="button"
+          className={burgerIsOpen ? "navbar-burger is-active" : "navbar-burger"}
+          aria-label="menu"
+          aria-expanded="false"
+          data-target="navbarBasicExample"
+          onClick={handleBurgerClick}
+        >
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
+
       {currentUser == null ? (
-        <div className="flex justify-end space-x-2">
-          <NavLink to="/" className="navlink">
-            Home
-          </NavLink>
-          <NavLink
-            to="/signup"
-            className="navlink bg-slate-200 hover:bg-gray-200 text-blue-500 font-semibold py-2 px-4 border border-blue-500 rounded"
-          >
-            Signup
-          </NavLink>
-          <NavLink
-            to="/login"
-            className="navlink bg-slate-200 hover:bg-gray-200 text-blue-500 font-semibold py-2 px-4 border border-blue-500 rounded"
-          >
-            Login
-          </NavLink>
+
+        <div id="menu" className={burgerIsOpen ? "navbar-menu is-active" : "navbar-menu"} >
+          <div className="navbar-end">
+            <div className="navbar-item">
+              <NavLink to="/about" className="navbar-item" onClick={handleBurgerClick}>
+                About
+              </NavLink>
+            </div>
+            <div className="navbar-item">
+              <NavLink to="/" className="navbar-item" onClick={handleBurgerClick}>
+                Events
+              </NavLink>
+            </div>
+            <div className="navbar-item">
+              <NavLink to="/login" className="button is-primary is-outlined" onClick={handleBurgerClick}>
+                Log in
+              </NavLink>
+            </div>
+          </div>
         </div>
       ) : (
-        <div className="flex justify-end space-x-2">
-          <NavLink to="/" className="navlink">
-            Home
-          </NavLink>
-          <NavLink
-            to={
-              currentUser && currentUser.id
-                ? `/users/${currentUser.id}`
-                : "/profile"
-            }
-            className="navlink"
-          >
-            My Profile
-          </NavLink>
-          <NavLink to="/about" className="navlink">
-            About
-          </NavLink>
-          <NavLink to="/thelounge" className="navlink">
-            The Lounge
-          </NavLink>
-          <button
-            className="navlink bg-slate-200 hover:bg-gray-200 text-blue-500 font-semibold py-2 px-4 border border-blue-500 rounded"
-            onClick={handleLogOut}
-          >
-            Log Out
-          </button>
+
+        <div id="menu" className={burgerIsOpen ? "navbar-menu is-active" : "navbar-menu"} >
+          <div className="navbar-start">
+            <NavLink to="/" className="navbar-item" onClick={handleBurgerClick}>
+              Home
+            </NavLink>
+            <NavLink className="navbar-item"
+              to={
+                currentUser && currentUser.id
+                  ? `/users/${currentUser.id}`
+                  : "/profile"
+              }
+              onClick={handleBurgerClick}
+            >
+              My Profile
+            </NavLink>
+            <NavLink to="/thelounge" className="navbar-item" onClick={handleBurgerClick}>
+              The Lounge
+            </NavLink>
+            <NavLink to="/about" className="navbar-item"  onClick={handleBurgerClick}>
+              About
+            </NavLink>
+          </div>
+          <div className="navbar-end">
+            <div className="navbar-item">
+              <div className="navbar-item">
+                <button onClick={handleLogOut} className="button is-light">
+                  Log out
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </nav>

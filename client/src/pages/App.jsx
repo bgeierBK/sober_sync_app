@@ -19,6 +19,10 @@ function App() {
 
   // Check session and set the current user
   useEffect(() => {
+    check_session()
+  }, []);
+
+  function check_session() {
     fetch("/api/check_session", {
       credentials: "include",
     })
@@ -28,13 +32,17 @@ function App() {
         }
       })
       .catch((error) => console.error("Failed to check session:", error));
-  }, []);
+  }
 
   return (
     <>
       <NavBar currentUser={currentUser} setCurrentUser={setCurrentUser} />
-      <h2>Sober Sync</h2>
-      <Outlet context={{ currentUser, setCurrentUser }} />
+      <Outlet context={{ currentUser, setCurrentUser, check_session }} />
+      <section className="footer is-flex is-justify-content-space-between">
+        <p className="has-text-white">© 2025 Sober Sync. All rights reserved.</p>
+        {/* TODO: add links to terms, privacy policy, cookie settings */}
+        {/* <p className="has-text-white">Links go here</p> */}
+      </section>
     </>
   );
 }
