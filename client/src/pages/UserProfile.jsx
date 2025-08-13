@@ -1,6 +1,6 @@
 import "../App.css";
 import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate, NavLink, Outlet } from "react-router-dom";
+import { useParams, Link, useNavigate, NavLink, Outlet, useOutletContext } from "react-router-dom";
 import "./ModalStyles.css"; // Import the styles (we'll create this next)
 import UserProfileHeader from "../components/UserProfile/UserProfileHeader";
 
@@ -29,6 +29,7 @@ function UserProfile() {
   const [blockingInProgress, setBlockingInProgress] = useState(false);
 
   const fallbackImagePath = "/blank_profile.webp";
+  const { handleLogOut } = useOutletContext()
 
   // Check blocking status
   const checkBlockStatus = async () => {
@@ -470,6 +471,13 @@ function UserProfile() {
                     </button>
                   </NavLink>
                 </li>
+                <li>
+                    <button
+                      className={"button is-danger is-outlined is-rounded"}
+                      name="logout"
+                      onClick={handleLogOut}> Log Out
+                    </button>
+                </li>
               </ul>
             </div>
 
@@ -724,7 +732,6 @@ function UserProfile() {
             </>
           ) : (
             <>
-
               {user.question1_answer && (
                 <p>
                   <strong>What is your dream concert lineup?</strong>{" "}

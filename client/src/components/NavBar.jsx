@@ -3,8 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import "../index.css";
 
 // eslint-disable-next-line react/prop-types
-function NavBar({ currentUser, setCurrentUser }) {
-  const [burgerIsOpen, setBurgerIsOpen] = useState()
+function NavBar({ currentUser, setCurrentUser, burgerIsOpen, setBurgerIsOpen }) {
   const navigate = useNavigate()
 
   function handleLogOut() {
@@ -83,13 +82,13 @@ function NavBar({ currentUser, setCurrentUser }) {
           {
             currentUser ? (
               <NavLink to={`/users/${currentUser.id}`} className="navbar-item" onClick={handleBurgerClick}>
-                <button className="button is-rounded is-primary is-outlined">
+                <button className="button is-primary is-outlined">
                   My Profile
                 </button>
               </NavLink>
             ) : (
               <NavLink to="/login" className="navbar-item" onClick={handleBurgerClick}>
-                <button className="button is-rounded is-primary is-outlined">
+                <button className="button is-primary is-outlined">
                   Log in
                 </button>
               </NavLink>
