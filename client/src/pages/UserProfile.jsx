@@ -20,6 +20,7 @@ function UserProfile() {
   const [photoFile, setPhotoFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [selectedTab, setSelectedTab] = useState("get-to-know-me")
 
   // Blocking states
   const [isBlocked, setIsBlocked] = useState(false);
@@ -410,42 +411,70 @@ function UserProfile() {
     );
   }
 
+  const handleTabClick = (e) => {
+    setSelectedTab(e.target.name)
+  }
+
   return (
     <section className="section is-small has-background-white-ter is-flex is-justify-content-center" >
       <div className="container is-max-desktop">
         <div className="box">
           {/* User Profile Header */}
-          <UserProfileHeader 
-            user={user} 
-            getDisplayText={getDisplayText} 
+          <UserProfileHeader
+            user={user}
+            getDisplayText={getDisplayText}
             fallbackImagePath={fallbackImagePath}
             loggedInUser={loggedInUser}
-            handleEditProfile={handleEditProfile}  
+            handleEditProfile={handleEditProfile}
           />
           <div className="columns">
-          {/* Tabs */}
+            {/* Tabs */}
             <div className="tabs">
               <ul className="is-flex is-flex-direction-column">
                 <li className="is-active">
                   <NavLink to={`/users/${user.id}/get-to-know-me`}>
-                    <button className="button is-link is-outlined is-rounded">Get to know me</button>
+                    <button
+                      className={
+                        selectedTab === "get-to-know-me" ?
+                          "button is-link is-rounded" :
+                          "button is-link is-outlined is-rounded"
+                      }
+                      name="get-to-know-me"
+                      onClick={handleTabClick}>Get to know me
+                    </button>
                   </NavLink>
                 </li>
                 <li>
                   <NavLink to={`/users/${user.id}/friends`}>
-                    <button className="button is-link is-outlined is-rounded">Friends</button>
+                    <button
+                      className={
+                        selectedTab === "friends" ?
+                          "button is-link is-rounded" :
+                          "button is-link is-outlined is-rounded"
+                      }
+                      name="friends"
+                      onClick={handleTabClick}>Friends
+                    </button>
                   </NavLink>
                 </li>
                 <li>
                   <NavLink to={`/users/${user.id}/events`}>
-                    <button className="button is-link is-outlined is-rounded">My events</button>
+                    <button
+                      className={
+                        selectedTab === "my-events" ?
+                          "button is-link is-rounded" :
+                          "button is-link is-outlined is-rounded"
+                      }
+                      name="my-events"
+                      onClick={handleTabClick}>My events
+                    </button>
                   </NavLink>
                 </li>
               </ul>
             </div>
-            
+
             <div>
-              <Outlet context={{ user, loggedInUser }}/>
+              <Outlet context={{ user, loggedInUser }} />
             </div>
           </div>
           {/* Block Confirmation Modal */}
