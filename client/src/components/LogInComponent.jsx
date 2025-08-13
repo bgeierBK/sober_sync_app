@@ -28,8 +28,8 @@ function LogInComponent() {
   }
 
   return (
-    <div className="section is-medium is-flex is-justify-content-center">
-      <div className="box" style={{ maxWidth: 500 }}>
+    <div className="section is-fullheight is-flex is-justify-content-center">
+      <div className="box" style={{ maxWidth: 500, maxHeight: 300 }}>
         <h5 className="title is-5">Log In</h5>
         <form
           onSubmit={handleSubmit}

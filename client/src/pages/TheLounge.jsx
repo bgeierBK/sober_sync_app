@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import socket from "../../socket.js";
+import { NavLink } from "react-router-dom";
 
 const TheLounge = () => {
   const [message, setMessage] = useState("");
@@ -26,7 +27,7 @@ const TheLounge = () => {
         // Fetch existing messages
         await fetchMessages();
       } catch (err) {
-        setError("Please log in to access The Lounge");
+        setError("Please log in to access the Lounge.");
         setIsLoggedIn(false);
       }
     };
@@ -93,19 +94,18 @@ const TheLounge = () => {
 
   if (error && !isLoggedIn) {
     return (
-      <div className="the-lounge">
-        <h2>The Lounge</h2>
-        <div className="error">{error}</div>
-        <p>You need to log in to join the conversation.</p>
-        <a href="/login" className="btn-login">
+      <div className="section is-fullheight">
+        <h2 className="title is-2">The Lounge</h2>
+        <div className="block">{error}</div>
+        <NavLink href="/login" className="button is-primary has-text-white is-rounded">
           Log In
-        </a>
+        </NavLink>
       </div>
     );
   }
 
   return (
-    <div className="the-lounge">
+    <div className="section is-fullheight">
       <div className="lounge-header">
         <h2>The Lounge</h2>
         <p>A place for everyone to chat and connect</p>
@@ -117,9 +117,8 @@ const TheLounge = () => {
             messages.map((msg, index) => (
               <div
                 key={msg.id || index}
-                className={`message ${
-                  msg.username === username ? "my-message" : "other-message"
-                }`}
+                className={`message ${msg.username === username ? "my-message" : "other-message"
+                  }`}
               >
                 <div className="message-header">
                   <strong className="username">{msg.username}</strong>
