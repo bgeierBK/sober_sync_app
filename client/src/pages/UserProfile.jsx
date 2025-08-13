@@ -1,8 +1,8 @@
 import "../App.css";
 import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, NavLink, Outlet } from "react-router-dom";
 import "./ModalStyles.css"; // Import the styles (we'll create this next)
-import UserProfileHeader from "../components/UserProfileHeader";
+import UserProfileHeader from "../components/UserProfile/UserProfileHeader";
 
 function UserProfile() {
   const { id } = useParams();
@@ -28,7 +28,6 @@ function UserProfile() {
   const [blockingInProgress, setBlockingInProgress] = useState(false);
 
   const fallbackImagePath = "/blank_profile.webp";
-  const today = new Date().toISOString().split("T")[0];
 
   // Check blocking status
   const checkBlockStatus = async () => {
@@ -411,14 +410,11 @@ function UserProfile() {
     );
   }
 
-  const upcomingEvents =
-    user.events?.filter((event) => event.date >= today) || [];
-  const pastEvents = user.events?.filter((event) => event.date < today) || [];
-
   return (
     <section className="section is-small has-background-white-ter is-flex is-justify-content-center" >
       <div className="container is-max-desktop">
         <div className="box">
+          {/* User Profile Header */}
           <UserProfileHeader 
             user={user} 
             getDisplayText={getDisplayText} 
@@ -427,24 +423,29 @@ function UserProfile() {
             handleEditProfile={handleEditProfile}  
           />
           <div className="columns">
+          {/* Tabs */}
             <div className="tabs">
               <ul className="is-flex is-flex-direction-column">
                 <li className="is-active">
-                  <a>
-                    <button className="button is-link is-rounded">Get to know me</button>
-                  </a>
+                  <NavLink to={`/users/${user.id}/get-to-know-me`}>
+                    <button className="button is-link is-outlined is-rounded">Get to know me</button>
+                  </NavLink>
                 </li>
                 <li>
-                  <a>
+                  <NavLink to={`/users/${user.id}/friends`}>
                     <button className="button is-link is-outlined is-rounded">Friends</button>
-                  </a>
+                  </NavLink>
                 </li>
                 <li>
-                  <a>
-                    <button className="button is-outlined is-link is-rounded">Previous events</button>
-                  </a>
+                  <NavLink to={`/users/${user.id}/events`}>
+                    <button className="button is-link is-outlined is-rounded">My events</button>
+                  </NavLink>
                 </li>
               </ul>
+            </div>
+            
+            <div>
+              <Outlet context={{ user, loggedInUser }}/>
             </div>
           </div>
           {/* Block Confirmation Modal */}
@@ -718,47 +719,6 @@ function UserProfile() {
             </>
           )}
 
-          <div className="friends-list">
-            <h4>Friends</h4>
-            {user.friend_list?.length > 0 ? (
-              <ul>
-                {user.friend_list.map((friend) => (
-                  <li key={friend.id}>
-                    <Link to={`/users/${friend.id}`}>{friend.username}</Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No friends yet</p>
-            )}
-          </div>
-
-          {/* Friend Requests */}
-          {loggedInUser && loggedInUser.id === user.id && (
-            <div className="friend-requests-list">
-              <h4>Friend Requests</h4>
-              {user.friend_requests_list?.length > 0 ? (
-                <ul>
-                  {user.friend_requests_list.map((req) => (
-                    <li key={req.id}>
-                      <Link to={`/users/${req.sender_id}`}>
-                        {req.sender_username}
-                      </Link>{" "}
-                      sent you a friend request.
-                      <button onClick={() => handleAcceptFriendRequest(req.id)}>
-                        Accept
-                      </button>
-                      <button onClick={() => handleRejectFriendRequest(req.id)}>
-                        Deny
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No friend requests</p>
-              )}
-            </div>
-          )}
 
           {/* Action buttons section */}
           {loggedInUser && loggedInUser.id !== user.id && (
@@ -831,37 +791,6 @@ function UserProfile() {
             </div>
           )}
 
-          <div className="events-list">
-            <h4>Upcoming Events</h4>
-            {upcomingEvents.length > 0 ? (
-              <ul>
-                {upcomingEvents.map((event) => (
-                  <li key={event.id}>
-                    <Link to={`/events/${event.id}`}>{event.name}</Link> -{" "}
-                    {event.date}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No upcoming events</p>
-            )}
-          </div>
-
-          <div className="events-list">
-            <h4>Past Events</h4>
-            {pastEvents.length > 0 ? (
-              <ul>
-                {pastEvents.map((event) => (
-                  <li key={event.id}>
-                    <Link to={`/events/${event.id}`}>{event.name}</Link> -{" "}
-                    {event.date}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No past events</p>
-            )}
-          </div>
         </div>
       </div>
     </section>

@@ -8,7 +8,6 @@ function LoggedInHome() {
 
     return (
         <>
-            <h1>DISCOVER</h1>
             <EventContainer
                 events={events}
                 setEvents={setEvents}
