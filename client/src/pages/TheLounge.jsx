@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import socket from "/Users/ben/Development/code/personal_projects/sober_sync_app/socket.js";
+import socket from "../../socket.js";
 
 const TheLounge = () => {
   const [message, setMessage] = useState("");
@@ -106,40 +106,40 @@ const TheLounge = () => {
 
   return (
     <div className="the-lounge">
-      <div className="columns is-centered">
-        <div className="column is-half">
       <div className="lounge-header">
-        <h2 className="title is-5">The Lounge</h2>
-        <div className="block">A place for everyone to chat and connect</div>
-        <div className="block"></div>
+        <h2>The Lounge</h2>
+        <p>A place for everyone to chat and connect</p>
       </div>
-          <div className="messages-container">
-            <div className="messages">
-              {messages.length > 0 ? (
-                messages.map((msg, index) => (
-                  <div
-                    key={msg.id || index}
-                    className={`message ${msg.username === username ? "my-message" : "other-message"
-                      }`}
-                  >
-                    <div className="message-header">
-                      <strong className="username">{msg.username}</strong>
-                      <span className="timestamp">
-                        {new Date(msg.timestamp).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <div className="message-body">{msg.message}</div>
-                  </div>
-                ))
-              ) : (
-                <p className="no-messages">
-                  No messages yet. Be the first to start the conversation!
-                </p>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
-      <div className="field">
+
+      <div className="messages-container">
+        <div className="messages">
+          {messages.length > 0 ? (
+            messages.map((msg, index) => (
+              <div
+                key={msg.id || index}
+                className={`message ${
+                  msg.username === username ? "my-message" : "other-message"
+                }`}
+              >
+                <div className="message-header">
+                  <strong className="username">{msg.username}</strong>
+                  <span className="timestamp">
+                    {new Date(msg.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+                <div className="message-body">{msg.message}</div>
+              </div>
+            ))
+          ) : (
+            <p className="no-messages">
+              No messages yet. Be the first to start the conversation!
+            </p>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      <div className="input-container">
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -152,20 +152,17 @@ const TheLounge = () => {
             }
           }}
           rows={2}
-          className="textarea"
+          className="message-input"
         />
         <button
           onClick={sendMessage}
           disabled={!isLoggedIn || !message.trim()}
-          className="button is-primary"
+          className="send-button"
         >
           Send
         </button>
       </div>
     </div>
-        </div>
-      </div>
-
   );
 };
 

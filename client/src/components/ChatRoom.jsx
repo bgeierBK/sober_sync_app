@@ -1,4 +1,4 @@
-import socket from "/Users/ben/Development/code/personal_projects/sober_sync_app/socket.js";
+import socket from "../../socket.js";
 import { useEffect, useState } from "react";
 
 const ChatRoom = ({ event_id }) => {
