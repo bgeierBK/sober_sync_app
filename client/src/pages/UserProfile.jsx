@@ -335,8 +335,8 @@ function UserProfile() {
               </ul>
             </div>
 
-            <div>
-              <Outlet context={{ user, loggedInUser }} />
+            <div className="column">
+              <Outlet context={{ user, setUser, loggedInUser }} />
             </div>
           </div>
           {/* Block Confirmation Modal */}

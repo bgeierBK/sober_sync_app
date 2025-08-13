@@ -8,7 +8,7 @@ function UserProfileFriends() {
         <div>
             {/* Friend Requests */}
             {loggedInUser && loggedInUser.id === user.id && (
-                <div className="friend-requests-list">
+                <div>
                     <h4 className="title is-4">Friend Requests</h4>
                     {user.friend_requests_list?.length > 0 ? (
                         <ul>
@@ -34,7 +34,7 @@ function UserProfileFriends() {
             )}
 
             {/* Friends List */}
-            <div className="friends-list">
+            <div>
                 <h4 className="title is-4">Friends</h4>
                 {user.friend_list?.length > 0 ? (
                     <ul>
