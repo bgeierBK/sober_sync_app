@@ -2,6 +2,7 @@ import "../App.css";
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import "./ModalStyles.css"; // Import the styles (we'll create this next)
+import UserProfileHeader from "../components/UserProfileHeader";
 
 function UserProfile() {
   const { id } = useParams();
@@ -418,39 +419,32 @@ function UserProfile() {
     <section className="section is-small has-background-white-ter is-flex is-justify-content-center" >
       <div className="container is-max-desktop">
         <div className="box">
+          <UserProfileHeader 
+            user={user} 
+            getDisplayText={getDisplayText} 
+            fallbackImagePath={fallbackImagePath}
+            loggedInUser={loggedInUser}
+            handleEditProfile={handleEditProfile}  
+          />
           <div className="columns">
-            <div className="is-flex is-justify-content-center column is-one-third">
-              <figure className="image">
-                <img
-                  src={user.photo_url || fallbackImagePath}
-                  alt={`${user.username}'s profile`}
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = fallbackImagePath;
-                  }}
-                  style={{ borderRadius: 16, borderStyle: "solid", borderColor: "#f68c1f", borderWidth: 1, width: 275, height: "auto" }}
-                />
-              </figure>
-            </div>
-            <div className="column">
-              <h5 className="title is-5">@{user.username}</h5>
-              {/* Display gender, orientation, and sober status if available */}
-              <div className="block">
-                {user.gender && (
-                  <div className="tag is-primary is-light mr-3">{getDisplayText("gender", user.gender)}</div >
-                )}
-
-                {user.orientation && (
-                  <div className="tag is-primary is-light mr-3">{getDisplayText("orientation", user.orientation)}</div >
-                )}
-
-                {user.soberstatus && (
-                  <div className="tag is-primary is-light mr-3">{getDisplayText("soberstatus", user.soberstatus)}</div >
-                )}
-              </div>
-              <div style={{ borderRadius: 8, borderStyle: "solid", borderWidth: 1, borderColor: "#263E88", padding: 20 }}>
-                {user.bio || "No bio available"}  
-              </div>
+            <div className="tabs">
+              <ul className="is-flex is-flex-direction-column">
+                <li className="is-active">
+                  <a>
+                    <button className="button is-link is-rounded">Get to know me</button>
+                  </a>
+                </li>
+                <li>
+                  <a>
+                    <button className="button is-link is-outlined is-rounded">Friends</button>
+                  </a>
+                </li>
+                <li>
+                  <a>
+                    <button className="button is-outlined is-link is-rounded">Previous events</button>
+                  </a>
+                </li>
+              </ul>
             </div>
           </div>
           {/* Block Confirmation Modal */}
@@ -720,9 +714,6 @@ function UserProfile() {
                   <strong>What is your favorite concert venue?</strong>{" "}
                   {user.question3_answer}
                 </p>
-              )}
-              {loggedInUser && loggedInUser.id === user.id && (
-                <button onClick={handleEditProfile}>Edit Profile</button>
               )}
             </>
           )}
