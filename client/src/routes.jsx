@@ -11,6 +11,7 @@ import DirectMessagesPage from "./pages/DirectMessagesPage";
 import UserProfileFriends from "./components/UserProfile/UserProfileFriends";
 import UserProfileGetToKnowMe from "./components/UserProfile/UserProfileGetToKnowMe";
 import UserProfileMyEvents from "./components/UserProfile/UserProfileMyEvents";
+import EditProfile from "./components/UserProfile/EditProfile";
 
 const routes = [
   {
@@ -39,6 +40,11 @@ const routes = [
           {
             path: "/users/:id/events",
             element: <UserProfileMyEvents />,
+            errorElement: <Error />
+          },
+          {
+            path: "/users/:id/edit",
+            element: <EditProfile />,
             errorElement: <Error />
           },
         ]

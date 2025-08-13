@@ -1,3 +1,5 @@
+import { NavLink } from "react-router-dom";
+
 function UserProfileHeader({ user, getDisplayText, fallbackImagePath, loggedInUser, handleEditProfile }) {
     return (
         <div className="columns">
@@ -24,8 +26,10 @@ function UserProfileHeader({ user, getDisplayText, fallbackImagePath, loggedInUs
                     {/* Buttons */}
                     {loggedInUser && loggedInUser.id === user.id && (
                         <div className="level-right">
-                            <button className="button is-primary has-text-white" onClick={handleEditProfile}>Edit Profile</button>
-                            <button className="button is-primary has-text-white" onClick={handleEditProfile}>Settings</button>
+                            <NavLink to={`/users/${user.id}/edit`}>
+                                <button className="button is-primary has-text-white">Edit Profile</button>
+                            </NavLink>
+                            <button className="button is-primary has-text-white">Settings</button>
                         </div>
                     )}
                 </div>
