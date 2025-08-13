@@ -13149,7 +13149,7 @@ label.panel-block:hover {
 .footer {
   --bulma-footer-background-color: #263e88;
   --bulma-footer-color: false;
-  --bulma-footer-padding: 24px 80px;
+  --bulma-footer-padding: 24px 5%;
   background-color: var(--bulma-footer-background-color);
   padding: var(--bulma-footer-padding);
 }
