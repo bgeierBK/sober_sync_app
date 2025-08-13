@@ -1,7 +1,8 @@
 import "../App.css";
 import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, NavLink, Outlet } from "react-router-dom";
 import "./ModalStyles.css"; // Import the styles (we'll create this next)
+import UserProfileHeader from "../components/UserProfile/UserProfileHeader";
 
 function UserProfile() {
   const { id } = useParams();
@@ -27,7 +28,6 @@ function UserProfile() {
   const [blockingInProgress, setBlockingInProgress] = useState(false);
 
   const fallbackImagePath = "/blank_profile.webp";
-  const today = new Date().toISOString().split("T")[0];
 
   // Check blocking status
   const checkBlockStatus = async () => {
@@ -410,97 +410,123 @@ function UserProfile() {
     );
   }
 
-  const upcomingEvents =
-    user.events?.filter((event) => event.date >= today) || [];
-  const pastEvents = user.events?.filter((event) => event.date < today) || [];
-
   return (
-    <div className="user-profile columns is-centered">
-      <div className="column is-half">
-        {/* Block Confirmation Modal */}
-        {showBlockModal && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 1000,
-            }}
-          >
-            <div
-              style={{
-                background: "white",
-                padding: "2rem",
-                borderRadius: "8px",
-                maxWidth: "400px",
-                width: "90%",
-                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-              }}
-            >
-              <h3 style={{ marginTop: 0, color: "#d32f2f" }}>Block User</h3>
-              <p style={{ margin: "1rem 0", lineHeight: "1.5" }}>
-                Are you sure you want to block <strong>{user.username}</strong>?
-              </p>
-              <p style={{ margin: "1rem 0", lineHeight: "1.5" }}>
-                This will remove them from your friends list, cancel any pending
-                friend requests, and prevent them from messaging you or seeing
-                your profile.
-              </p>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "1rem",
-                  justifyContent: "flex-end",
-                  marginTop: "1.5rem",
-                }}
-              >
-                <button
-                  onClick={handleBlockUser}
-                  disabled={blockingInProgress}
-                  style={{
-                    backgroundColor: blockingInProgress ? "#ccc" : "#d32f2f",
-                    color: "white",
-                    border: "none",
-                    padding: "0.5rem 1rem",
-                    borderRadius: "4px",
-                    cursor: blockingInProgress ? "not-allowed" : "pointer",
-                    fontSize: "0.9rem",
-                    transition: "background-color 0.2s",
-                  }}
-                >
-                  {blockingInProgress ? "Blocking..." : "Yes, Block User"}
-                </button>
-                <button
-                  onClick={() => setShowBlockModal(false)}
-                  disabled={blockingInProgress}
-                  style={{
-                    backgroundColor: blockingInProgress ? "#ccc" : "#757575",
-                    color: "white",
-                    border: "none",
-                    padding: "0.5rem 1rem",
-                    borderRadius: "4px",
-                    cursor: blockingInProgress ? "not-allowed" : "pointer",
-                    fontSize: "0.9rem",
-                    transition: "background-color 0.2s",
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
+    <section className="section is-small has-background-white-ter is-flex is-justify-content-center" >
+      <div className="container is-max-desktop">
+        <div className="box">
+          {/* User Profile Header */}
+          <UserProfileHeader 
+            user={user} 
+            getDisplayText={getDisplayText} 
+            fallbackImagePath={fallbackImagePath}
+            loggedInUser={loggedInUser}
+            handleEditProfile={handleEditProfile}  
+          />
+          <div className="columns">
+          {/* Tabs */}
+            <div className="tabs">
+              <ul className="is-flex is-flex-direction-column">
+                <li className="is-active">
+                  <NavLink to={`/users/${user.id}/get-to-know-me`}>
+                    <button className="button is-link is-outlined is-rounded">Get to know me</button>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to={`/users/${user.id}/friends`}>
+                    <button className="button is-link is-outlined is-rounded">Friends</button>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to={`/users/${user.id}/events`}>
+                    <button className="button is-link is-outlined is-rounded">My events</button>
+                  </NavLink>
+                </li>
+              </ul>
+            </div>
+            
+            <div>
+              <Outlet context={{ user, loggedInUser }}/>
             </div>
           </div>
-        )}
-
-        {/* Profile Header with Username */}
-        <div className="profile-header">
-          <h3 className="title is-5">{user.username}</h3>
-
+          {/* Block Confirmation Modal */}
+          {showBlockModal && (
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 1000,
+              }}
+            >
+              <div
+                style={{
+                  background: "white",
+                  padding: "2rem",
+                  borderRadius: "8px",
+                  maxWidth: "400px",
+                  width: "90%",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                }}
+              >
+                <h3 style={{ marginTop: 0, color: "#d32f2f" }}>Block User</h3>
+                <p style={{ margin: "1rem 0", lineHeight: "1.5" }}>
+                  Are you sure you want to block <strong>{user.username}</strong>?
+                </p>
+                <p style={{ margin: "1rem 0", lineHeight: "1.5" }}>
+                  This will remove them from your friends list, cancel any pending
+                  friend requests, and prevent them from messaging you or seeing
+                  your profile.
+                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "1rem",
+                    justifyContent: "flex-end",
+                    marginTop: "1.5rem",
+                  }}
+                >
+                  <button
+                    onClick={handleBlockUser}
+                    disabled={blockingInProgress}
+                    style={{
+                      backgroundColor: blockingInProgress ? "#ccc" : "#d32f2f",
+                      color: "white",
+                      border: "none",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "4px",
+                      cursor: blockingInProgress ? "not-allowed" : "pointer",
+                      fontSize: "0.9rem",
+                      transition: "background-color 0.2s",
+                    }}
+                  >
+                    {blockingInProgress ? "Blocking..." : "Yes, Block User"}
+                  </button>
+                  <button
+                    onClick={() => setShowBlockModal(false)}
+                    disabled={blockingInProgress}
+                    style={{
+                      backgroundColor: blockingInProgress ? "#ccc" : "#757575",
+                      color: "white",
+                      border: "none",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "4px",
+                      cursor: blockingInProgress ? "not-allowed" : "pointer",
+                      fontSize: "0.9rem",
+                      transition: "background-color 0.2s",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Messaging section with conditional rendering based on user context */}
           {loggedInUser && (
             <div className="messages-section">
@@ -522,363 +548,252 @@ function UserProfile() {
               )}
             </div>
           )}
-        </div>
 
-        {isEditing && editedUser ? (
-          <>
-            <div className="profile-photo-edit">
-              <img
-                src={previewUrl || fallbackImagePath}
-                alt="Profile preview"
-                className="profile-picture"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = fallbackImagePath;
-                }}
-              />
-              <div className="photo-upload-container">
-                <label htmlFor="profile-photo-upload" className="upload-label">
-                  Upload New Photo
-                </label>
-                <input
-                  type="file"
-                  id="profile-photo-upload"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  className="file-input"
+          {isEditing && editedUser ? (
+            <>
+              <div className="profile-photo-edit">
+                <img
+                  src={previewUrl || fallbackImagePath}
+                  alt="Profile preview"
+                  className="profile-picture"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = fallbackImagePath;
+                  }}
                 />
-                <p className="upload-hint">
-                  Select an image file (JPG, PNG recommended)
-                </p>
-              </div>
-            </div>
-
-            <div className="edit-profile">
-              <label>Bio:</label>
-              <textarea
-                value={editedUser.bio}
-                onChange={(e) =>
-                  setEditedUser({ ...editedUser, bio: e.target.value })
-                }
-                maxLength={300}
-              />
-
-              {/* Dropdown for gender */}
-              <label>Gender:</label>
-              <select
-                value={editedUser.gender}
-                onChange={(e) =>
-                  setEditedUser({ ...editedUser, gender: e.target.value })
-                }
-              >
-                <option value="">Select Gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="non-binary">Non-Binary</option>
-              </select>
-
-              {/* Dropdown for orientation */}
-              <label>Orientation:</label>
-              <select
-                value={editedUser.orientation}
-                onChange={(e) =>
-                  setEditedUser({ ...editedUser, orientation: e.target.value })
-                }
-              >
-                <option value="">Select Orientation</option>
-                <option value="straight">Straight</option>
-                <option value="gay">Gay</option>
-                <option value="bi">Bisexual</option>
-                <option value="pan">Pansexual</option>
-                <option value="aro/ace">Asexual/Aromantic</option>
-              </select>
-
-              {/* Dropdown for sober status */}
-              <label>Sober Status:</label>
-              <select
-                value={editedUser.soberstatus}
-                onChange={(e) =>
-                  setEditedUser({ ...editedUser, soberstatus: e.target.value })
-                }
-              >
-                <option value="">Select Sober Status</option>
-                <option value="abstinent">Abstinent</option>
-                <option value="sober-curious">Sober-Curious</option>
-                <option value="california-sober">California Sober</option>
-              </select>
-
-              <label>
-                <strong>What is your dream concert lineup?</strong>
-              </label>
-              <textarea
-                value={editedUser.question1_answer}
-                onChange={(e) =>
-                  setEditedUser({
-                    ...editedUser,
-                    question1_answer: e.target.value,
-                  })
-                }
-                maxLength={300}
-              />
-              <label>
-                <strong>
-                  What is the best concert you've have ever been to?
-                </strong>
-              </label>
-              <textarea
-                value={editedUser.question2_answer}
-                onChange={(e) =>
-                  setEditedUser({
-                    ...editedUser,
-                    question2_answer: e.target.value,
-                  })
-                }
-                maxLength={300}
-              />
-              <label>
-                <strong>What is your favorite concert venue?</strong>
-              </label>
-              <textarea
-                value={editedUser.question3_answer}
-                onChange={(e) =>
-                  setEditedUser({
-                    ...editedUser,
-                    question3_answer: e.target.value,
-                  })
-                }
-                maxLength={300}
-              />
-              <div className="button-group">
-                <button
-                  type="button"
-                  onClick={handleSaveProfile}
-                  className="save-button"
-                  disabled={photoUploading}
-                >
-                  {photoUploading ? "Uploading..." : "Save Changes"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="cancel-button"
-                  disabled={photoUploading}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <img
-              src={user.photo_url || fallbackImagePath}
-              alt={`${user.username}'s profile`}
-              className="profile-picture"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = fallbackImagePath;
-              }}
-            />
-
-            <p>
-              <strong>Bio:</strong> {user.bio || "No bio available"}
-            </p>
-
-            {/* Display gender, orientation, and sober status if available */}
-            <div className="user-details">
-              {user.gender && (
-                <p>
-                  <strong>Gender:</strong> {getDisplayText("gender", user.gender)}
-                </p>
-              )}
-
-              {user.orientation && (
-                <p>
-                  <strong>Orientation:</strong>{" "}
-                  {getDisplayText("orientation", user.orientation)}
-                </p>
-              )}
-
-              {user.soberstatus && (
-                <p>
-                  <strong>Sober Status:</strong>{" "}
-                  {getDisplayText("soberstatus", user.soberstatus)}
-                </p>
-              )}
-            </div>
-
-            {user.question1_answer && (
-              <p>
-                <strong>What is your dream concert lineup?</strong>{" "}
-                {user.question1_answer}
-              </p>
-            )}
-            {user.question2_answer && (
-              <p>
-                <strong>
-                  What is the best concert you've have ever been to?
-                </strong>{" "}
-                {user.question2_answer}
-              </p>
-            )}
-            {user.question3_answer && (
-              <p>
-                <strong>What is your favorite concert venue?</strong>{" "}
-                {user.question3_answer}
-              </p>
-            )}
-            {loggedInUser && loggedInUser.id === user.id && (
-              <button onClick={handleEditProfile}>Edit Profile</button>
-            )}
-          </>
-        )}
-
-        <div className="friends-list">
-          <h4>Friends</h4>
-          {user.friend_list?.length > 0 ? (
-            <ul>
-              {user.friend_list.map((friend) => (
-                <li key={friend.id}>
-                  <Link to={`/users/${friend.id}`}>{friend.username}</Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No friends yet</p>
-          )}
-        </div>
-
-        {/* Friend Requests */}
-        {loggedInUser && loggedInUser.id === user.id && (
-          <div className="friend-requests-list">
-            <h4>Friend Requests</h4>
-            {user.friend_requests_list?.length > 0 ? (
-              <ul>
-                {user.friend_requests_list.map((req) => (
-                  <li key={req.id}>
-                    <Link to={`/users/${req.sender_id}`}>
-                      {req.sender_username}
-                    </Link>{" "}
-                    sent you a friend request.
-                    <button onClick={() => handleAcceptFriendRequest(req.id)}>
-                      Accept
-                    </button>
-                    <button onClick={() => handleRejectFriendRequest(req.id)}>
-                      Deny
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No friend requests</p>
-            )}
-          </div>
-        )}
-
-        {/* Action buttons section */}
-        {loggedInUser && loggedInUser.id !== user.id && (
-          <div
-            style={{
-              margin: "1.5rem 0",
-              padding: "1rem",
-              borderTop: "1px solid #eee",
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.5rem",
-            }}
-          >
-            {/* Block/Unblock button */}
-            {isBlocked ? (
-              <button
-                onClick={handleUnblockUser}
-                disabled={blockingInProgress}
-                style={{
-                  backgroundColor: blockingInProgress ? "#ccc" : "#388e3c",
-                  color: "white",
-                  border: "none",
-                  padding: "0.5rem 1rem",
-                  borderRadius: "4px",
-                  cursor: blockingInProgress ? "not-allowed" : "pointer",
-                  fontSize: "0.9rem",
-                  transition: "background-color 0.2s",
-                  alignSelf: "flex-start",
-                }}
-              >
-                {blockingInProgress ? "Unblocking..." : "Unblock User"}
-              </button>
-            ) : (
-              <button
-                onClick={() => setShowBlockModal(true)}
-                style={{
-                  backgroundColor: "#d32f2f",
-                  color: "white",
-                  border: "none",
-                  padding: "0.5rem 1rem",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontSize: "0.9rem",
-                  transition: "background-color 0.2s",
-                  alignSelf: "flex-start",
-                }}
-              >
-                Block User
-              </button>
-            )}
-
-            {/* Friend request buttons - only show if not blocked */}
-            {!isBlocked && (
-              <>
-                {!isFriends && !friendRequestSent && (
-                  <button onClick={handleAddFriend}>Send Friend Request</button>
-                )}
-                {isFriends && <button>Unfriend</button>}
-                {friendRequestSent && <p>Friend request sent</p>}
-                {incomingFriendRequest && (
-                  <p>
-                    You have an incoming friend request from{" "}
-                    <Link to={`/users/${incomingFriendRequest.sender_id}`}>
-                      {incomingFriendRequest.sender_username}
-                    </Link>
+                <div className="photo-upload-container">
+                  <label htmlFor="profile-photo-upload" className="upload-label">
+                    Upload New Photo
+                  </label>
+                  <input
+                    type="file"
+                    id="profile-photo-upload"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    className="file-input"
+                  />
+                  <p className="upload-hint">
+                    Select an image file (JPG, PNG recommended)
                   </p>
-                )}
-              </>
-            )}
-          </div>
-        )}
+                </div>
+              </div>
 
-        <div className="events-list">
-          <h4>Upcoming Events</h4>
-          {upcomingEvents.length > 0 ? (
-            <ul>
-              {upcomingEvents.map((event) => (
-                <li key={event.id}>
-                  <Link to={`/events/${event.id}`}>{event.name}</Link> -{" "}
-                  {event.date}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No upcoming events</p>
-          )}
-        </div>
+              <div className="edit-profile">
+                <label>Bio:</label>
+                <textarea
+                  value={editedUser.bio}
+                  onChange={(e) =>
+                    setEditedUser({ ...editedUser, bio: e.target.value })
+                  }
+                  maxLength={300}
+                />
 
-        <div className="events-list">
-          <h4>Past Events</h4>
-          {pastEvents.length > 0 ? (
-            <ul>
-              {pastEvents.map((event) => (
-                <li key={event.id}>
-                  <Link to={`/events/${event.id}`}>{event.name}</Link> -{" "}
-                  {event.date}
-                </li>
-              ))}
-            </ul>
+                {/* Dropdown for gender */}
+                <label>Gender:</label>
+                <select
+                  value={editedUser.gender}
+                  onChange={(e) =>
+                    setEditedUser({ ...editedUser, gender: e.target.value })
+                  }
+                >
+                  <option value="">Select Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="non-binary">Non-Binary</option>
+                </select>
+
+                {/* Dropdown for orientation */}
+                <label>Orientation:</label>
+                <select
+                  value={editedUser.orientation}
+                  onChange={(e) =>
+                    setEditedUser({ ...editedUser, orientation: e.target.value })
+                  }
+                >
+                  <option value="">Select Orientation</option>
+                  <option value="straight">Straight</option>
+                  <option value="gay">Gay</option>
+                  <option value="bi">Bisexual</option>
+                  <option value="pan">Pansexual</option>
+                  <option value="aro/ace">Asexual/Aromantic</option>
+                </select>
+
+                {/* Dropdown for sober status */}
+                <label>Sober Status:</label>
+                <select
+                  value={editedUser.soberstatus}
+                  onChange={(e) =>
+                    setEditedUser({ ...editedUser, soberstatus: e.target.value })
+                  }
+                >
+                  <option value="">Select Sober Status</option>
+                  <option value="abstinent">Abstinent</option>
+                  <option value="sober-curious">Sober-Curious</option>
+                  <option value="california-sober">California Sober</option>
+                </select>
+
+                <label>
+                  <strong>What is your dream concert lineup?</strong>
+                </label>
+                <textarea
+                  value={editedUser.question1_answer}
+                  onChange={(e) =>
+                    setEditedUser({
+                      ...editedUser,
+                      question1_answer: e.target.value,
+                    })
+                  }
+                  maxLength={300}
+                />
+                <label>
+                  <strong>
+                    What is the best concert you've have ever been to?
+                  </strong>
+                </label>
+                <textarea
+                  value={editedUser.question2_answer}
+                  onChange={(e) =>
+                    setEditedUser({
+                      ...editedUser,
+                      question2_answer: e.target.value,
+                    })
+                  }
+                  maxLength={300}
+                />
+                <label>
+                  <strong>What is your favorite concert venue?</strong>
+                </label>
+                <textarea
+                  value={editedUser.question3_answer}
+                  onChange={(e) =>
+                    setEditedUser({
+                      ...editedUser,
+                      question3_answer: e.target.value,
+                    })
+                  }
+                  maxLength={300}
+                />
+                <div className="button-group">
+                  <button
+                    type="button"
+                    onClick={handleSaveProfile}
+                    className="save-button"
+                    disabled={photoUploading}
+                  >
+                    {photoUploading ? "Uploading..." : "Save Changes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="cancel-button"
+                    disabled={photoUploading}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </>
           ) : (
-            <p>No past events</p>
+            <>
+
+              {user.question1_answer && (
+                <p>
+                  <strong>What is your dream concert lineup?</strong>{" "}
+                  {user.question1_answer}
+                </p>
+              )}
+              {user.question2_answer && (
+                <p>
+                  <strong>
+                    What is the best concert you've have ever been to?
+                  </strong>{" "}
+                  {user.question2_answer}
+                </p>
+              )}
+              {user.question3_answer && (
+                <p>
+                  <strong>What is your favorite concert venue?</strong>{" "}
+                  {user.question3_answer}
+                </p>
+              )}
+            </>
           )}
+
+
+          {/* Action buttons section */}
+          {loggedInUser && loggedInUser.id !== user.id && (
+            <div
+              style={{
+                margin: "1.5rem 0",
+                padding: "1rem",
+                borderTop: "1px solid #eee",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+              }}
+            >
+              {/* Block/Unblock button */}
+              {isBlocked ? (
+                <button
+                  onClick={handleUnblockUser}
+                  disabled={blockingInProgress}
+                  style={{
+                    backgroundColor: blockingInProgress ? "#ccc" : "#388e3c",
+                    color: "white",
+                    border: "none",
+                    padding: "0.5rem 1rem",
+                    borderRadius: "4px",
+                    cursor: blockingInProgress ? "not-allowed" : "pointer",
+                    fontSize: "0.9rem",
+                    transition: "background-color 0.2s",
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  {blockingInProgress ? "Unblocking..." : "Unblock User"}
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowBlockModal(true)}
+                  style={{
+                    backgroundColor: "#d32f2f",
+                    color: "white",
+                    border: "none",
+                    padding: "0.5rem 1rem",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "0.9rem",
+                    transition: "background-color 0.2s",
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  Block User
+                </button>
+              )}
+
+              {/* Friend request buttons - only show if not blocked */}
+              {!isBlocked && (
+                <>
+                  {!isFriends && !friendRequestSent && (
+                    <button onClick={handleAddFriend}>Send Friend Request</button>
+                  )}
+                  {isFriends && <button>Unfriend</button>}
+                  {friendRequestSent && <p>Friend request sent</p>}
+                  {incomingFriendRequest && (
+                    <p>
+                      You have an incoming friend request from{" "}
+                      <Link to={`/users/${incomingFriendRequest.sender_id}`}>
+                        {incomingFriendRequest.sender_username}
+                      </Link>
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 

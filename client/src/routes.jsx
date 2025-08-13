@@ -8,6 +8,9 @@ import Home from "./pages/Home";
 import TheLounge from "./pages/TheLounge";
 import About from "./pages/About";
 import DirectMessagesPage from "./pages/DirectMessagesPage";
+import UserProfileFriends from "./components/UserProfile/UserProfileFriends";
+import UserProfileGetToKnowMe from "./components/UserProfile/UserProfileGetToKnowMe";
+import UserProfileMyEvents from "./components/UserProfile/UserProfileMyEvents";
 
 const routes = [
   {
@@ -22,6 +25,23 @@ const routes = [
         path: "/users/:id",
         element: <UserProfile />,
         errorElement: <Error />,
+        children: [
+          {
+            path: "/users/:id/friends",
+            element: <UserProfileFriends />,
+            errorElement: <Error />
+          },
+          {
+            path: "/users/:id/get-to-know-me",
+            element: <UserProfileGetToKnowMe />,
+            errorElement: <Error />
+          },
+          {
+            path: "/users/:id/events",
+            element: <UserProfileMyEvents />,
+            errorElement: <Error />
+          },
+        ]
       },
       {
         path: "/events/:id",
