@@ -249,9 +249,9 @@ function UserProfile() {
     return fieldOptions[field][value.toLowerCase()] || value;
   };
 
-  if (loading) return <div>Loading...</div>;
+  // if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
-  if (!user) return <div>User not found</div>;
+  if (!user) return <div className="section is-fullheight has-background-white-ter"></div>;
 
   // If the current user is blocked by this user, show limited info
   if (isBlockingMe) {
