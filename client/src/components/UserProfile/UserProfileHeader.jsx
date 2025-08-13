@@ -1,6 +1,9 @@
+import { NavLink } from "react-router-dom";
+
 function UserProfileHeader({ user, getDisplayText, fallbackImagePath, loggedInUser, handleEditProfile }) {
     return (
         <div className="columns">
+            {/* Photo Section */}
             <div className="is-flex is-justify-content-center column is-one-third">
                 <figure className="image">
                     <img
@@ -14,34 +17,41 @@ function UserProfileHeader({ user, getDisplayText, fallbackImagePath, loggedInUs
                     />
                 </figure>
             </div>
+            {/* Info Section */}
             <div className="column">
                 <div className="level">
-                    <h5 className="title is-5">@{user.username}</h5>
+                    <div className="level-left">
+                        <h5 className="title is-5">@{user.username}</h5>
+                    </div>
+                    {/* Buttons */}
                     {loggedInUser && loggedInUser.id === user.id && (
-                        <button className="button is-primary is-rounded has-text-white" onClick={handleEditProfile}>Edit Profile</button>
+                        <div className="level-right">
+                            <NavLink to={`/users/${user.id}/edit`}>
+                                <button className="button is-primary has-text-white">Edit Profile</button>
+                            </NavLink>
+                            <button className="button is-primary has-text-white">Settings</button>
+                        </div>
                     )}
                 </div>
-
                 {/* Display gender, orientation, and sober status if available */}
                 <div className="block">
                     {user.gender && (
                         <div className="tag is-primary is-light mr-3">
                             {getDisplayText("gender", user.gender)}
-                        </div >
+                        </div>
                     )}
-
                     {user.orientation && (
                         <div className="tag is-primary is-light mr-3">
                             {getDisplayText("orientation", user.orientation)}
-                        </div >
+                        </div>
                     )}
-
-                    {user.soberstatus && (
+                    {user.sober_status && (
                         <div className="tag is-primary is-light mr-3">
-                            {getDisplayText("soberstatus", user.soberstatus)}
-                        </div >
+                            {getDisplayText("soberstatus", user.sober_status)}
+                        </div>
                     )}
                 </div>
+                {/* Bio */}
                 <div style={{ borderRadius: 8, borderStyle: "solid", borderWidth: 1, borderColor: "#263E88", padding: 20 }}>
                     {user.bio || "No bio available"}
                 </div>

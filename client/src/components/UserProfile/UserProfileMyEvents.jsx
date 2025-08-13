@@ -10,7 +10,7 @@ function UserProfileMyEvents() {
 
     return (
         <div>
-            <div className="events-list">
+            <div>
                 <h4 className="title is-4">Upcoming Events</h4>
                 {upcomingEvents.length > 0 ? (
                     upcomingEvents.map((event) => (
@@ -24,7 +24,7 @@ function UserProfileMyEvents() {
                 )}
             </div>
 
-            <div className="events-list">
+            <div>
                 <h4 className="title is-4">Past Events</h4>
                 {pastEvents.length > 0 ? (
                     <ul>

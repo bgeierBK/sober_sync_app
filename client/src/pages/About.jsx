@@ -35,7 +35,7 @@ const About = () => {
                   <img src="/Kevin.jpeg" alt="Kevin" />
                 </figure>
               </div>
-              <div class="card-content">
+              <div className="card-content">
                 <div>
                   <h4 className="title is-4">Kevin Ith</h4>
                   <h5 className="subtitle is-5">CEO and Founder</h5>
@@ -57,7 +57,7 @@ const About = () => {
                   <img src="/Victoria.jpeg" alt="Victoria" />
                 </figure>
               </div>
-              <div class="card-content">
+              <div className="card-content">
                 <div>
                   <h4 className="title is-4">Victoria Guardino</h4>
                   <h5 className="subtitle is-5">Founding Designer</h5>
@@ -79,7 +79,7 @@ const About = () => {
                   <img src="/Ben.jpeg" alt="Ben" />
                 </figure>
               </div>
-              <div class="card-content">
+              <div className="card-content">
                 <div>
                   <h4 className="title is-4">Ben Geier</h4>
                   <h5 className="subtitle is-5">Founding Engineer</h5>

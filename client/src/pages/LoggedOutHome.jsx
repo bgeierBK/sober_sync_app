@@ -15,12 +15,12 @@ function LoggedOutHome() {
 
     return (
         <>
-            <section class="section is-medium">
-                <div class="columns is-8">
-                    <div class="column">
-                        <h2 class="title is-2">Creating sober spaces everywhere for everyone</h2>
-                        <div class="buttons are-medium">
-                            <NavLink to="/login" className="button is-primary is-rounded" style={{ color: "white "}}>
+            <section className="section is-medium">
+                <div className="columns is-8">
+                    <div className="column">
+                        <h2 className="title is-2">Creating sober spaces everywhere for everyone</h2>
+                        <div className="buttons are-medium">
+                            <NavLink to="/login" className="button is-primary is-rounded" style={{ color: "white " }}>
                                 Log In
                             </NavLink>
                             <NavLink to="/signup" className="button is-primary is-rounded is-outlined">
@@ -28,34 +28,36 @@ function LoggedOutHome() {
                             </NavLink>
                         </div>
                     </div>
-                    <container class="image is-5by3 column">
-                        <img src="/HomePhoto.jpg" alt="Festival audience" />
-                    </container>
+                    <div className="container column">
+                        <figure className="image is-5by3">
+                            <img src="/HomePhoto.jpg" alt="Festival audience" />
+                        </figure>
+                    </div>
                 </div>
             </section>
-            <section class="hero is-medium is-primary">
-                <div class="hero-body columns is-8">
-                    <div class="container column">
-                        <h3 class="title is-3 is-spaced">
+            <section className="hero is-medium is-primary">
+                <div className="hero-body columns is-8">
+                    <div className="container column">
+                        <h3 className="title is-3 is-spaced">
                             Find events
                         </h3>
-                        <h4 class="subtitle is-4">
+                        <h4 className="subtitle is-4">
                             Discover unforgettable shows and festivals
                         </h4>
                     </div>
-                    <div class="container column">
-                        <h3 class="title is-3 is-spaced">
+                    <div className="container column">
+                        <h3 className="title is-3 is-spaced">
                             Get connected
                         </h3>
-                        <h4 class="subtitle is-4">
+                        <h4 className="subtitle is-4">
                             Meet like-minded sober music lovers
                         </h4>
                     </div>
-                    <div class="container column">
-                        <h3 class="title is-3 is-spaced">
+                    <div className="container column">
+                        <h3 className="title is-3 is-spaced">
                             Don't go it alone
                         </h3>
-                        <h4 class="subtitle is-4">
+                        <h4 className="subtitle is-4">
                             Build a safety net of peer support
                         </h4>
                     </div>

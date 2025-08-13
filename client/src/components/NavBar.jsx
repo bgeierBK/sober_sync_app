@@ -3,8 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import "../index.css";
 
 // eslint-disable-next-line react/prop-types
-function NavBar({ currentUser, setCurrentUser }) {
-  const [burgerIsOpen, setBurgerIsOpen] = useState()
+function NavBar({ currentUser, setCurrentUser, burgerIsOpen, setBurgerIsOpen }) {
   const navigate = useNavigate()
 
   function handleLogOut() {
@@ -28,7 +27,7 @@ function NavBar({ currentUser, setCurrentUser }) {
         console.error("Problem with logout:", error.message);
         alert("Problem with logout:" + error.message);
       });
-      setBurgerIsOpen(state => false)
+    setBurgerIsOpen(state => false)
   }
 
   function handleBurgerClick() {
@@ -38,7 +37,7 @@ function NavBar({ currentUser, setCurrentUser }) {
   return (
     <nav className="navbar" role="navigation" aria-label="main navigation" style={{ padding: "15px 30px" }}>
       <div className="navbar-brand">
-        <NavLink to="/" style={{ width: "150px", height: "80px", padding: "15px"}} >
+        <NavLink to="/" style={{ width: "150px", height: "80px", padding: "15px" }} >
           <figure className="image" >
             <img src="/Logo.png" />
           </figure>
@@ -58,72 +57,45 @@ function NavBar({ currentUser, setCurrentUser }) {
         </button>
       </div>
 
-      {currentUser == null ? (
-
-        <div id="menu" className={burgerIsOpen ? "navbar-menu is-active" : "navbar-menu"} >
-          <div className="navbar-end">
-            <div className="navbar-item">
-              <NavLink to="/" className="navbar-item" onClick={handleBurgerClick}>
-                Discover
-              </NavLink>
-            </div>
-            <div className="navbar-item">
-              <NavLink to="/" className="navbar-item" onClick={handleBurgerClick}>
-                Connections
-              </NavLink>
-            </div>
-            <div className="navbar-item">
-              <NavLink to="/thelounge" className="navbar-item" onClick={handleBurgerClick}>
-                The Lounge
-              </NavLink>
-            </div>
-            <div className="navbar-item">
-              <NavLink to="/about" className="navbar-item" onClick={handleBurgerClick}>
-                Our Mission
-              </NavLink>
-            </div>
-            <div className="navbar-item">
-              <NavLink to="/login" className="button is-primary is-outlined" onClick={handleBurgerClick}>
-                Log in
-              </NavLink>
-            </div>
-          </div>
-        </div>
-      ) : (
-
-        <div id="menu" className={burgerIsOpen ? "navbar-menu is-active" : "navbar-menu"} >
-          <div className="navbar-start">
+      <div id="menu" className={burgerIsOpen ? "navbar-menu is-active" : "navbar-menu"} >
+        <div className="navbar-end">
+          <div className="navbar-item">
             <NavLink to="/" className="navbar-item" onClick={handleBurgerClick}>
-              Home
+              Discover
             </NavLink>
-            <NavLink className="navbar-item"
-              to={
-                currentUser && currentUser.id
-                  ? `/users/${currentUser.id}`
-                  : "/profile"
-              }
-              onClick={handleBurgerClick}
-            >
-              My Profile
+          </div>
+          <div className="navbar-item">
+            <NavLink to="/" className="navbar-item" onClick={handleBurgerClick}>
+              Connections
             </NavLink>
+          </div>
+          <div className="navbar-item">
             <NavLink to="/thelounge" className="navbar-item" onClick={handleBurgerClick}>
               The Lounge
             </NavLink>
-            <NavLink to="/about" className="navbar-item"  onClick={handleBurgerClick}>
-              About
+          </div>
+          <div className="navbar-item">
+            <NavLink to="/about" className="navbar-item" onClick={handleBurgerClick}>
+              Our Mission
             </NavLink>
           </div>
-          <div className="navbar-end">
-            <div className="navbar-item">
-              <div className="navbar-item">
-                <button onClick={handleLogOut} className="button is-light">
-                  Log out
+          {
+            currentUser ? (
+              <NavLink to={`/users/${currentUser.id}`} className="navbar-item" onClick={handleBurgerClick}>
+                <button className="button is-primary is-outlined">
+                  My Profile
                 </button>
-              </div>
-            </div>
-          </div>
+              </NavLink>
+            ) : (
+              <NavLink to="/login" className="navbar-item" onClick={handleBurgerClick}>
+                <button className="button is-primary is-outlined">
+                  Log in
+                </button>
+              </NavLink>
+            )
+          }
         </div>
-      )}
+      </div>
     </nav>
   );
 }

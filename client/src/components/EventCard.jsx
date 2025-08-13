@@ -90,7 +90,7 @@ function EventCard({ event, currentUser, setCurrentUser }) {
             />
           </figure>
         </div>
-        <div class="card-content">
+        <div className="card-content">
           <h4 className="title is-4">{event.name}</h4>
           <p className="text">{event.date}</p>
           <h6 className="title is-6">{event.venue_name}</h6>
