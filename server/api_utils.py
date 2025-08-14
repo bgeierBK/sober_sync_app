@@ -1,19 +1,23 @@
 import requests
+import os
 from server.models import Event
 from server.extensions import db
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
-def get_nyc_location_ids():
-    LOCATION_API_URL = "https://edmtrain.com/api/locations"
-    API_KEY = "50be9660-3951-4835-9804-03f5728a9e5a"
-    
+load_dotenv()
+
+EDMTRAIN_API_KEY = os.getenv(EDMTRAIN_API_KEY)
+EDMTRAIN_LOCATION_API_URL = os.getenv(EDMTRAIN_LOCATION_API_URL)EDMTRAIN_EVENTS_API_URL = os.getenv(EDMTRAIN_EVENTS_API_URL)
+
+def get_nyc_location_ids():    
     params = {
         "state": "New York",
         "city": "New York",
-        "client": API_KEY
+        "client": EDMTRAIN_API_KEY
     }
     
-    response = requests.get(LOCATION_API_URL, params=params)
+    response = requests.get(EDMTRAIN_LOCATION_API_URL, params=params)
     
     if response.status_code != 200:
         print(f"Error: Received status code {response.status_code} from API.")
@@ -28,22 +32,19 @@ def get_nyc_location_ids():
         return []
 
 def fetch_and_add_edmtrain_events():
-    API_URL = "https://edmtrain.com/api/events"
-    API_KEY = "50be9660-3951-4835-9804-03f5728a9e5a"
-    
     location_ids = get_nyc_location_ids()
     if not location_ids:
         print("No location IDs found for NYC.")
         return
 
-    LOCATION_IDS = ",".join(map(str, location_ids))
+    location_id_string = ",".join(map(str, location_ids))
 
     params = {
-        "client": API_KEY,
-        "locationIds": LOCATION_IDS
+        "client": EDMTRAIN_API_KEY,
+        "locationIds": location_id_string
     }
 
-    response = requests.get(API_URL, params=params)
+    response = requests.get(EDMTRAIN_EVENTS_API_URL, params=params)
     
     if response.status_code != 200:
         print(f"Error: Received status code {response.status_code} from API.")
@@ -98,115 +99,115 @@ def fetch_and_add_edmtrain_events():
     else:
         print("No new EDMTrain events to add.")
 
-def fetch_and_add_eventbrite_events():
-    # Eventbrite API configuration
-    EVENTBRITE_API_URL = "https://www.eventbriteapi.com/v3/events/search/"
-    EVENTBRITE_API_KEY = "WBI67QTUD6VF7LJUXYW5"  # Your Eventbrite API key
+# def fetch_and_add_eventbrite_events():
+#     # Eventbrite API configuration
+#     EVENTBRITE_API_URL = "https://www.eventbriteapi.com/v3/events/search/"
+#     EVENTBRITE_API_KEY = "WBI67QTUD6VF7LJUXYW5"  # Your Eventbrite API key
     
-    headers = {
-        "Authorization": f"Bearer {EVENTBRITE_API_KEY}"
-    }
+#     headers = {
+#         "Authorization": f"Bearer {EVENTBRITE_API_KEY}"
+#     }
     
-    # Current date and date 3 months from now for search range
-    start_date = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-    end_date = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%dT%H:%M:%SZ")
+#     # Current date and date 3 months from now for search range
+#     start_date = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+#     end_date = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%dT%H:%M:%SZ")
     
-    # Parameters for music events in NYC
-    params = {
-        "location.address": "New York, NY",
-        "location.within": "20mi",
-        "categories": "103",  # Music category ID in Eventbrite
-        "start_date.range_start": start_date,
-        "start_date.range_end": end_date,
-        "page_size": 100  # Max page size
-    }
+#     # Parameters for music events in NYC
+#     params = {
+#         "location.address": "New York, NY",
+#         "location.within": "20mi",
+#         "categories": "103",  # Music category ID in Eventbrite
+#         "start_date.range_start": start_date,
+#         "start_date.range_end": end_date,
+#         "page_size": 100  # Max page size
+#     }
     
-    existing_events = {(event.name, event.date) for event in Event.query.all()}
-    new_events = []
+#     existing_events = {(event.name, event.date) for event in Event.query.all()}
+#     new_events = []
     
-    try:
-        # Pagination handling - Eventbrite limits results per page
-        has_more_items = True
-        continuation_token = None
-        page_count = 1
+#     try:
+#         # Pagination handling - Eventbrite limits results per page
+#         has_more_items = True
+#         continuation_token = None
+#         page_count = 1
         
-        while has_more_items and page_count <= 5:  # Limit to 5 pages to avoid excessive API calls
-            if continuation_token:
-                params["continuation"] = continuation_token
+#         while has_more_items and page_count <= 5:  # Limit to 5 pages to avoid excessive API calls
+#             if continuation_token:
+#                 params["continuation"] = continuation_token
                 
-            response = requests.get(EVENTBRITE_API_URL, headers=headers, params=params)
+#             response = requests.get(EVENTBRITE_API_URL, headers=headers, params=params)
             
-            if response.status_code != 200:
-                print(f"Error: Received status code {response.status_code} from Eventbrite API.")
-                print(f"Response: {response.text}")
-                break
+#             if response.status_code != 200:
+#                 print(f"Error: Received status code {response.status_code} from Eventbrite API.")
+#                 print(f"Response: {response.text}")
+#                 break
                 
-            events_data = response.json()
+#             events_data = response.json()
             
-            for event in events_data.get("events", []):
-                try:
-                    event_name = event.get("name", {}).get("text", "Unnamed Event")
-                    if not event_name or event_name == "Unnamed Event":
-                        continue
+#             for event in events_data.get("events", []):
+#                 try:
+#                     event_name = event.get("name", {}).get("text", "Unnamed Event")
+#                     if not event_name or event_name == "Unnamed Event":
+#                         continue
                     
-                    # Convert event date to match your existing format
-                    event_date_str = event.get("start", {}).get("utc")
-                    if event_date_str:
-                        event_date = event_date_str.split("T")[0]  # Extract YYYY-MM-DD
-                    else:
-                        continue  # Skip events without a date
+#                     # Convert event date to match your existing format
+#                     event_date_str = event.get("start", {}).get("utc")
+#                     if event_date_str:
+#                         event_date = event_date_str.split("T")[0]  # Extract YYYY-MM-DD
+#                     else:
+#                         continue  # Skip events without a date
                     
-                    # Get venue information
-                    venue_id = event.get("venue_id")
-                    venue_name = "Unknown Location"
-                    city = "New York, NY"
+#                     # Get venue information
+#                     venue_id = event.get("venue_id")
+#                     venue_name = "Unknown Location"
+#                     city = "New York, NY"
                     
-                    if venue_id:
-                        venue_url = f"https://www.eventbriteapi.com/v3/venues/{venue_id}/"
-                        venue_response = requests.get(venue_url, headers=headers)
-                        if venue_response.status_code == 200:
-                            venue_data = venue_response.json()
-                            venue_name = venue_data.get("name", "Unknown Location")
-                            address = venue_data.get("address", {})
-                            city = f"{address.get('city', 'New York')}, {address.get('region', 'NY')}"
+#                     if venue_id:
+#                         venue_url = f"https://www.eventbriteapi.com/v3/venues/{venue_id}/"
+#                         venue_response = requests.get(venue_url, headers=headers)
+#                         if venue_response.status_code == 200:
+#                             venue_data = venue_response.json()
+#                             venue_name = venue_data.get("name", "Unknown Location")
+#                             address = venue_data.get("address", {})
+#                             city = f"{address.get('city', 'New York')}, {address.get('region', 'NY')}"
                     
-                    # Get image URL
-                    photo_url = None
-                    if event.get("logo") and event["logo"].get("url"):
-                        photo_url = event["logo"]["url"]
+#                     # Get image URL
+#                     photo_url = None
+#                     if event.get("logo") and event["logo"].get("url"):
+#                         photo_url = event["logo"]["url"]
                     
-                    # Check for duplicates
-                    if (event_name, event_date) not in existing_events:
-                        new_events.append(Event(
-                            name=event_name.strip(),
-                            date=event_date,
-                            venue_name=venue_name.strip(),
-                            city=city.strip(),
-                            photo=photo_url,
-                            source="Eventbrite",  # Add source identifier
-                            external_id=event.get("id")  # Store Eventbrite ID for reference
-                        ))
+#                     # Check for duplicates
+#                     if (event_name, event_date) not in existing_events:
+#                         new_events.append(Event(
+#                             name=event_name.strip(),
+#                             date=event_date,
+#                             venue_name=venue_name.strip(),
+#                             city=city.strip(),
+#                             photo=photo_url,
+#                             source="Eventbrite",  # Add source identifier
+#                             external_id=event.get("id")  # Store Eventbrite ID for reference
+#                         ))
                         
-                except Exception as e:
-                    print(f"Error processing Eventbrite event: {event.get('name', {}).get('text', 'Unnamed')}. Error: {str(e)}")
-                    continue
+#                 except Exception as e:
+#                     print(f"Error processing Eventbrite event: {event.get('name', {}).get('text', 'Unnamed')}. Error: {str(e)}")
+#                     continue
             
-            # Check for continuation
-            continuation_token = events_data.get("pagination", {}).get("continuation")
-            has_more_items = bool(continuation_token)
-            page_count += 1
+#             # Check for continuation
+#             continuation_token = events_data.get("pagination", {}).get("continuation")
+#             has_more_items = bool(continuation_token)
+#             page_count += 1
             
-    except Exception as e:
-        print(f"Error fetching Eventbrite events: {str(e)}")
+#     except Exception as e:
+#         print(f"Error fetching Eventbrite events: {str(e)}")
     
-    if new_events:
-        db.session.add_all(new_events)
-        db.session.commit()
-        print(f"{len(new_events)} new Eventbrite events successfully added.")
-    else:
-        print("No new Eventbrite events to add.")
+#     if new_events:
+#         db.session.add_all(new_events)
+#         db.session.commit()
+#         print(f"{len(new_events)} new Eventbrite events successfully added.")
+#     else:
+#         print("No new Eventbrite events to add.")
 
 def fetch_and_add_events():
     """Main function to fetch and add events from all sources"""
     fetch_and_add_edmtrain_events()
-    fetch_and_add_eventbrite_events()
+    # fetch_and_add_eventbrite_events()

@@ -1,5 +1,6 @@
 import os
 import sys
+from dotenv import load_dotenv
 from flask import Flask, request, session, jsonify
 from flask_socketio import SocketIO
 from flask_migrate import Migrate
@@ -11,6 +12,7 @@ from flask_cors import CORS
 import cloudinary.uploader
 import cloudinary.api
 
+load_dotenv()
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -24,9 +26,9 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Cloudinary configuration
 cloudinary.config(
-    cloud_name=os.getenv("CLOUD_NAME", "dxtkrqdmo"),  # Ensure you set this in .env file or pass it here
-    api_key=os.getenv("CLOUDINARY_API_KEY", "562345124685953"),  # Ensure this is set in .env or pass it here
-    api_secret=os.getenv("CLOUDINARY_API_SECRET", "4pgVbgO8NdaOWgR7Zdz9GQ4Qaso"),  # Ensure this is set in .env or pass it here
+    cloud_name=os.getenv("CLOUD_NAME")
+    api_key=os.getenv("CLOUDINARY_API_KEY")
+    api_secret=os.getenv("CLOUDINARY_API_SECRET")
     secure=True
 )
 
