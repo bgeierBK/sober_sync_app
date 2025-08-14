@@ -7,8 +7,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-EDMTRAIN_API_KEY = os.getenv(EDMTRAIN_API_KEY)
-EDMTRAIN_LOCATION_API_URL = os.getenv(EDMTRAIN_LOCATION_API_URL)EDMTRAIN_EVENTS_API_URL = os.getenv(EDMTRAIN_EVENTS_API_URL)
+EDMTRAIN_API_KEY = os.getenv("EDMTRAIN_API_KEY")
+EDMTRAIN_LOCATION_API_URL = os.getenv("EDMTRAIN_LOCATION_API_URL")
+EDMTRAIN_EVENTS_API_URL = os.getenv("EDMTRAIN_EVENTS_API_URL")
 
 def get_nyc_location_ids():    
     params = {
@@ -102,7 +103,7 @@ def fetch_and_add_edmtrain_events():
 # def fetch_and_add_eventbrite_events():
 #     # Eventbrite API configuration
 #     EVENTBRITE_API_URL = "https://www.eventbriteapi.com/v3/events/search/"
-#     EVENTBRITE_API_KEY = "WBI67QTUD6VF7LJUXYW5"  # Your Eventbrite API key
+#     EVENTBRITE_API_KEY = os.getenv(EVENTBRITE_API_KEY)
     
 #     headers = {
 #         "Authorization": f"Bearer {EVENTBRITE_API_KEY}"
